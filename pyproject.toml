@@ -21,6 +21,7 @@ dependencies = [
     "loguru",
     "matplotlib",
     "mkdocs",
+    "mkdocs-material>=9.7.6",
     "notebook",
     "numpy",
     "pandas",
