@@ -8,6 +8,39 @@ from restaurant_visitor_eda.config import FIGURES_DIR, PROCESSED_DATA_DIR
 
 app = typer.Typer()
 
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_target_distribution(data):
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+
+    ax = axes.flatten()
+
+    sns.set_style("whitegrid")
+
+    visitors_log = np.log1p(data['visitors'])
+
+    sns.histplot(data['visitors'], kde=True, ax=ax[0], color='skyblue')
+    ax[0].set_title('Visitors Distribution', fontsize=14)
+    ax[0].set_xlabel('Visitors')
+
+    data['visitors_log'] = np.log1p(data['visitors'])
+    sns.histplot(data['visitors_log'], kde=True, ax=ax[1], color='salmon')
+    ax[1].set_title('Log-transformed Visitors (log1p)', fontsize=14)
+    ax[1].set_xlabel('Log(Visitors + 1)')
+
+    sns.boxplot(x=data['visitors'], ax=ax[2], color='skyblue')
+    ax[2].set_title('Boxplot: Visitors', fontsize=12)
+
+    sns.boxplot(x=visitors_log, ax=ax[3], color='salmon')
+    ax[3].set_title('Boxplot: Log(Visitors)', fontsize=12)
+
+    
+    sns.despine()
+    plt.tight_layout()
+    plt.show()
+
 
 @app.command()
 def main(

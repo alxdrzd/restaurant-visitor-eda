@@ -26,10 +26,12 @@ dependencies = [
     "notebook",
     "numpy",
     "pandas",
+    "pandas-stubs~=2.3.3",
     "pip",
     "python-dotenv",
     "ruff",
     "scikit-learn",
+    "setuptools>=82.0.1",
     "tqdm",
     "typer",
 ]
