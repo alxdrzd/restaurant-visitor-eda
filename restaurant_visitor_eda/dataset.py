@@ -15,6 +15,13 @@ def count_unique_and_nans(df: pd.DataFrame) -> pd.DataFrame:
     missing = missing.sort_values(ascending=False, by='nan percentage')
     return missing.round(2)
 
+def get_stats(df: pd.DataFrame):
+    stats = df.describe(percentiles=[.25, .5, .75, .95, .99])
+    stats.loc['median'] = df.median()
+    stats.loc['skewness'] = df.skew()
+    stats.loc['kurtosis'] = df.kurtosis()
+    return stats.round(3)
+
 
 from restaurant_visitor_eda.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 
