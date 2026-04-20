@@ -114,6 +114,146 @@ def plot_visitors_boxplot_air(df: pd.DataFrame):
     plt.show()
 
 
+def build_barplot_for_air_prefectures(data):
+    df_air_genre_prefecture = data.prefecture.value_counts()
+    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+    ax = sns.barplot(data=df_air_genre_prefecture, orient='h', palette='viridis')
+    for container in ax.containers:
+        ax.bar_label(container, padding=3)
+    plt.title('prefectures')
+    sns.despine()
+    plt.show()
+
+
+def build_barplot_for_air_districts(data):
+    df_air_genre_district = data.district.value_counts()
+    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+    ax = sns.barplot(data=df_air_genre_district, orient='h', palette='viridis')
+    for container in ax.containers:
+        ax.bar_label(container, padding=3)
+    plt.title('districts')
+    sns.despine()
+    plt.show()
+
+
+def build_barplot_for_air_blocks(data):
+    df_air_genre_block = data.block.value_counts()
+    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+    ax = sns.barplot(data=df_air_genre_block, orient='h', legend=False, palette='viridis')
+    for container in ax.containers:
+        ax.bar_label(container, padding=3)
+    plt.title('blocks')
+    sns.despine()
+    plt.show()
+
+
+
+def plot_median_visitors_per_prefecture(df: pd.DataFrame):
+    genre_stats = (
+        df.groupby('prefecture')['visitors']
+        .median()
+        .sort_values(ascending=False)
+        .reset_index()
+    )
+
+    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+
+    ax = sns.barplot(
+        data=genre_stats, 
+        x='visitors', 
+        y='prefecture', 
+        palette='viridis'
+    )
+
+    for container in ax.containers:
+        ax.bar_label(container, padding=3)
+    plt.title('Median Visitors by prefecture', fontsize=16, pad=20)
+    plt.xlabel('Median Daily Visitors', fontsize=12)
+    plt.ylabel('Genre', fontsize=12)
+    
+    sns.despine(left=True, bottom=True) 
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+def plot_median_visitors_per_district(df: pd.DataFrame):
+    genre_stats = (
+        df.groupby('district')['visitors']
+        .median()
+        .sort_values(ascending=False)
+        .reset_index()
+    )
+
+    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+
+    ax = sns.barplot(
+        data=genre_stats.iloc[0:25], 
+        x='visitors', 
+        y='district', 
+        palette='viridis'
+    )
+
+    for container in ax.containers:
+        ax.bar_label(container, padding=3)
+    plt.title('Median Visitors by district', fontsize=16, pad=20)
+    plt.xlabel('Median Daily Visitors', fontsize=12)
+    plt.ylabel('Genre', fontsize=12)
+    
+    sns.despine(left=True, bottom=True) 
+    plt.tight_layout()
+    plt.show()
+
+
+
+def plot_median_visitors_per_block(df: pd.DataFrame):
+    genre_stats = (
+        df.groupby('block')['visitors']
+        .median()
+        .sort_values(ascending=False)
+        .reset_index()
+    )
+
+    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+
+    ax = sns.barplot(
+        data=genre_stats.iloc[0:25], 
+        x='visitors', 
+        y='block', 
+        palette='viridis'
+    )
+
+    for container in ax.containers:
+        ax.bar_label(container, padding=3)
+    plt.title('Median Visitors by block', fontsize=16, pad=20)
+    plt.xlabel('Median Daily Visitors', fontsize=12)
+    plt.ylabel('Genre', fontsize=12)
+    
+    sns.despine(left=True, bottom=True) 
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_genre_prefecture_heatmap(df):
+    pivot = pd.crosstab(df['air_genre_name'], df['prefecture'])
+    
+    plt.figure(figsize=(14, 8))
+    sns.heatmap(pivot, annot=True, fmt="d", cmap="YlGnBu", cbar_kws={'label': 'Number of restaurants'})
+    plt.title('Concentration of Genres by Prefecture', fontsize=16)
+    plt.xlabel('Prefecture')
+    plt.ylabel('Genre')
+    plt.show()
+
+
+
 @app.command()
 def main(
     # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
