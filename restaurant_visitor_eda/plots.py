@@ -369,7 +369,66 @@ def plot_visitors_boxplot_air_by_holiday_and_day_and_eve(df: pd.DataFrame):
     plt.tight_layout()
     plt.show()
 
+def plot_visitors_over_year(df: pd.DataFrame):
+    median_ = df.groupby('visit_datetime')['visitors'].median()
+    mean_ = df.groupby('visit_datetime')['visitors'].mean()
+    sum_ = df.groupby('visit_datetime')['visitors'].sum()
 
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    sns.set_style("whitegrid")
+
+    sns.lineplot(ax=axes[0], data=median_)
+    axes[0].set_title('Median Visitors')
+    axes[0].tick_params(axis='x', rotation=45)
+
+    sns.lineplot(ax=axes[1], data=mean_)
+    axes[1].set_title('Mean Visitors')
+    axes[1].tick_params(axis='x', rotation=45)
+
+    sns.lineplot(ax=axes[2], data=sum_)
+    axes[2].set_title('Total Visitors (Sum)')
+    axes[2].tick_params(axis='x', rotation=45)
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_visitors_with_rolling(df: pd.DataFrame, window=7):
+    median_ = df.groupby('visit_datetime')['visitors'].median()
+    mean_ = df.groupby('visit_datetime')['visitors'].mean()
+    sum_ = df.groupby('visit_datetime')['visitors'].sum()
+
+    stats = [
+        ("Median", median_),
+        ("Mean", mean_),
+        ("Sum", sum_)
+    ]
+
+    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+    sns.set_style("whitegrid")
+
+    for i, (title, data) in enumerate(stats):
+        sns.lineplot(ax=axes[i], data=data, alpha=0.3, label='Daily')
+        
+        rolling_data = data.rolling(window=window, center=True).mean()
+        sns.lineplot(ax=axes[i], data=rolling_data, color='red', linewidth=2, label=f'{window}-Day Rolling')
+        
+        axes[i].set_title(f'{title} Visitors')
+        axes[i].tick_params(axis='x', rotation=45)
+        axes[i].legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_number_of_open_restaurants(df: pd.DataFrame):
+    data = df.groupby('visit_datetime')['air_store_id'].nunique()
+    sns.lineplot(data=data)
+    plt.grid(True, which="both", ls="-", alpha=0.2) 
+    plt.title('Number of opened restaurants')
+    plt.xlabel('Date')
+    plt.ylabel('Number')
+    plt.tick_params(axis='x', rotation=45)
+    plt.show()
 
 @app.command()
 def main(
