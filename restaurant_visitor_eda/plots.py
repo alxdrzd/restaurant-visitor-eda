@@ -345,6 +345,30 @@ def plot_visitors_boxplot_air_by_holiday_and_day(df: pd.DataFrame):
     plt.tight_layout()
     plt.show()
 
+def plot_visitors_boxplot_air_by_holiday_and_day_and_eve(df: pd.DataFrame):
+    sorted_idx = (
+        df.groupby('day_pattern')['visitors']
+        .median()
+        .sort_values(ascending=False)
+        .index
+    )
+
+    sns.boxplot(
+    data=df, 
+    x='visitors', 
+    y='day_pattern', 
+    order=sorted_idx,
+    palette='viridis'
+)
+
+    plt.xscale('log')
+    plt.grid(True, which="both", ls="-", alpha=0.2) 
+    plt.title('Distribution of Visitors by holiday flag (Log Scale)')
+    plt.xlabel('Visitors (log scale)')
+    plt.ylabel('holiday')
+    plt.tight_layout()
+    plt.show()
+
 
 
 @app.command()
