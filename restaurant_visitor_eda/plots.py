@@ -430,6 +430,34 @@ def plot_number_of_open_restaurants(df: pd.DataFrame):
     plt.tick_params(axis='x', rotation=45)
     plt.show()
 
+
+def plot_hpg_coverage(df: pd.DataFrame):
+    plt.figure(figsize=(5, 5))
+
+    status_counts = df['hpg_store_id'].isna().value_counts()
+    status_counts.index = ['Missing HPG ID', 'Has HPG ID'] if status_counts.index[0] else ['Has HPG ID', 'Missing HPG ID']
+    
+    colors = sns.color_palette('pastel')[0:2] 
+    
+    plt.pie(
+        status_counts, 
+        labels=status_counts.index, 
+        autopct='%1.1f%%', 
+        startangle=140, 
+        colors=colors,
+        pctdistance=0.85,
+        explode=(0.05, 0)  
+    )
+
+    # centre_circle = plt.Circle((0,0), 0.70, fc='white')
+    # fig = plt.gcf()
+    # fig.gca().add_artist(centre_circle)
+
+    plt.title('HPG Store ID Mapping Coverage', fontsize=15, pad=20)
+    plt.axis('equal') 
+    plt.tight_layout()
+    plt.show()
+
 @app.command()
 def main(
     # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
