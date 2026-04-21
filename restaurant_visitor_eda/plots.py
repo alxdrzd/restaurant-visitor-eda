@@ -252,6 +252,26 @@ def plot_genre_prefecture_heatmap(df):
     plt.ylabel('Genre')
     plt.show()
 
+def plot_visitors_heatmap(df, agg_func='median'):
+    pivot = df.pivot_table(
+        values='visitors', 
+        index='air_genre_name', 
+        columns='prefecture', 
+        aggfunc=agg_func
+    )
+    
+    pivot = pivot.fillna(0)
+
+    plt.figure(figsize=(14, 9))
+    
+    sns.heatmap(pivot, annot=True, fmt=".1f", cmap="YlOrRd", 
+                cbar_kws={'label': f'{agg_func.capitalize()} Visitors'})
+    
+    plt.title(f'{agg_func.capitalize()} Daily Visitors by Genre and Prefecture', fontsize=16)
+    plt.xlabel('Prefecture')
+    plt.ylabel('Genre')
+    plt.tight_layout()
+    plt.show()
 
 
 @app.command()
