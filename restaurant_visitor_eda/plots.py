@@ -274,6 +274,79 @@ def plot_visitors_heatmap(df, agg_func='median'):
     plt.show()
 
 
+def plot_visitors_boxplot_air_by_day(df: pd.DataFrame):
+    sorted_idx = (
+        df.groupby('day_of_week')['visitors']
+        .median()
+        .sort_values(ascending=False)
+        .index
+    )
+
+    sns.boxplot(data=df, x='visitors', y='day_of_week', order=sorted_idx, palette='viridis', hue='day_of_week', legend=False)
+    plt.xscale('log')
+    plt.grid(True, which="both", ls="-", alpha=0.2) 
+    plt.title('Distribution of Visitors by days of week (Log Scale)')
+    plt.xlabel('Visitors (log scale)')
+    plt.ylabel('Day of week')
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_visitors_boxplot_air_by_holiday(df: pd.DataFrame):
+    sorted_idx = (
+        df.groupby('holiday_flg')['visitors']
+        .median()
+        .sort_values(ascending=False)
+        .index
+    )
+
+    sns.boxplot(
+    data=df, 
+    x='visitors', 
+    y=df['holiday_flg'].astype(str), 
+    order=sorted_idx.astype(str),    
+    palette='viridis', 
+    hue=df['holiday_flg'].astype(str), 
+    legend=False
+    )
+
+    plt.xscale('log')
+    plt.grid(True, which="both", ls="-", alpha=0.2) 
+    plt.title('Distribution of Visitors by holiday flag (Log Scale)')
+    plt.xlabel('Visitors (log scale)')
+    plt.ylabel('holiday')
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_visitors_boxplot_air_by_holiday_and_day(df: pd.DataFrame):
+    sorted_idx = (
+        df.groupby('day_of_week')['visitors']
+        .median()
+        .sort_values(ascending=False)
+        .index
+    )
+
+    sns.boxplot(
+    data=df, 
+    x='visitors', 
+    y=df['day_of_week'].astype(str), 
+    order=sorted_idx.astype(str),    
+    palette='viridis', 
+    hue=df['holiday_flg'].astype(str), 
+    legend=False
+    )
+
+    plt.xscale('log')
+    plt.grid(True, which="both", ls="-", alpha=0.2) 
+    plt.title('Distribution of Visitors by holiday flag (Log Scale)')
+    plt.xlabel('Visitors (log scale)')
+    plt.ylabel('holiday')
+    plt.tight_layout()
+    plt.show()
+
+
+
 @app.command()
 def main(
     # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
