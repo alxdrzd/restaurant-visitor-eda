@@ -34,9 +34,9 @@ def calculate_holiday_significance(df):
 
     alpha = 0.05
     if p_value < alpha:
-        print("Результат: Разница статистически значима (отвергаем нулевую гипотезу).")
+        print("Result: The difference is significant.")
     else:
-        print("Результат: Разница статистически НЕ значима (не удалось отвергнуть нулевую гипотезу).")
+        print("Результат: The difference is NOT significant.")
 
 
 from restaurant_visitor_eda.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
