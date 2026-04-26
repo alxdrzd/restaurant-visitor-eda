@@ -31,6 +31,7 @@ clean:
 lint:
 	ruff format --check
 	ruff check
+	ty check
 
 ## Format source code with ruff
 .PHONY: format
