@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, Optional
 
 from loguru import logger
 import matplotlib.pyplot as plt
@@ -38,6 +39,31 @@ def plot_target_distribution(data):
     ax[3].set_title("Boxplot: Log(Visitors)", fontsize=12)
 
     sns.despine()
+    plt.tight_layout()
+    plt.show()
+
+
+def build_visitors_boxplot(
+    df: pd.DataFrame, y_col: str, hue_col: Optional[str] = None, title: str = ""
+):
+    order = (
+        df.groupby(y_col, observed=True)["visitors"].median().sort_values(ascending=False).index
+    )
+
+    plt.figure(figsize=(12, 8))
+    sns.boxplot(
+        data=df,
+        x="visitors",
+        y=y_col,
+        order=order,
+        hue=hue_col if hue_col else y_col,
+        palette="viridis",
+        legend=False if not hue_col else True,
+    )
+    plt.xscale("log")
+    plt.grid(True, which="both", ls="-", alpha=0.2)
+    plt.title(title or f"Visitors Distribution by {y_col} (Log Scale)")
+    plt.xlabel("Visitors (log scale)")
     plt.tight_layout()
     plt.show()
 
@@ -349,6 +375,32 @@ def build_target_by_category_plot(
     plt.ylabel(group_col.replace("_", " ").title(), fontsize=12)
 
     sns.despine(left=True, bottom=True)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_heatmap(
+    df: pd.DataFrame, index: str, columns: str, values: str = "visitors", agg_func: Any = "count"
+):
+    """Universal heatmap for cross-categorical analysis."""
+    if agg_func == "count":
+        pivot = pd.crosstab(df[index], df[columns])
+        label = "Count"
+    else:
+        pivot = df.pivot_table(
+            values=values, index=index, columns=columns, aggfunc=agg_func
+        ).fillna(0)
+        label = f"{agg_func.capitalize()} {values}"
+
+    plt.figure(figsize=(14, 8))
+    sns.heatmap(
+        pivot,
+        annot=True,
+        fmt=".1f" if agg_func != "count" else "d",
+        cmap="YlOrRd",
+        cbar_kws={"label": label},
+    )
+    plt.title(f"{label} by {index} and {columns}")
     plt.tight_layout()
     plt.show()
 
