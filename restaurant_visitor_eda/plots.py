@@ -157,7 +157,7 @@ def plot_visitors_boxplot_air_by_holiday(df: pd.DataFrame):
         order=sorted_idx.astype(str),
         palette="viridis",
         hue=df["holiday_flg"].astype(str),
-        legend=False,
+        legend=True,
     )
 
     plt.xscale("log")
@@ -179,7 +179,7 @@ def plot_visitors_boxplot_air_by_holiday_and_day(df: pd.DataFrame):
         order=sorted_idx.astype(str),
         palette="viridis",
         hue=df["holiday_flg"].astype(str),
-        legend=False,
+        legend=True,
     )
 
     plt.xscale("log")
