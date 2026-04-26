@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from loguru import logger
+from matplotlib import legend
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -41,31 +42,6 @@ def plot_target_distribution(data):
     plt.tight_layout()
     plt.show()
 
-
-def build_barplot_for_air_genres(data):
-    df_air_genre_name = data.air_genre_name.value_counts()
-    plt.figure(figsize=(12, 8))
-    sns.set_style("whitegrid")
-    ax = sns.barplot(data=df_air_genre_name, orient="h", palette="viridis")
-    for container in ax.containers:
-        ax.bar_label(container, padding=3)
-    plt.title("air restaurants")
-    sns.despine()
-    plt.show()
-
-
-def build_barplot_for_hpg_genres(data):
-    df_hpg_genre_name = data.hpg_genre_name.value_counts()
-    plt.figure(figsize=(12, 8))
-    sns.set_style("whitegrid")
-    ax = sns.barplot(data=df_hpg_genre_name, orient="h", palette="viridis")
-    for container in ax.containers:
-        ax.bar_label(container, padding=3)
-    plt.title("hpg restaurants")
-    sns.despine()
-    plt.show()
-
-
 def plot_median_visitors_per_genre(df: pd.DataFrame):
     genre_stats = (
         df.groupby("air_genre_name")["visitors"]
@@ -105,109 +81,10 @@ def plot_visitors_boxplot_air(df: pd.DataFrame):
         legend=False,
     )
     plt.xscale("log")
-    plt.grid(True, which="both", ls="-", alpha=0.2)  # Добавим сетку для логарифмов
+    plt.grid(True, which="both", ls="-", alpha=0.2)  
     plt.title("Distribution of Visitors by Genre (Log Scale)")
     plt.xlabel("Visitors (log scale)")
     plt.ylabel("Genre")
-    plt.tight_layout()
-    plt.show()
-
-
-def build_barplot_for_air_prefectures(data):
-    df_air_genre_prefecture = data.prefecture.value_counts()
-    plt.figure(figsize=(12, 8))
-    sns.set_style("whitegrid")
-    ax = sns.barplot(data=df_air_genre_prefecture, orient="h", palette="viridis")
-    for container in ax.containers:
-        ax.bar_label(container, padding=3)
-    plt.title("prefectures")
-    sns.despine()
-    plt.show()
-
-
-def build_barplot_for_air_districts(data):
-    df_air_genre_district = data.district.value_counts()
-    plt.figure(figsize=(12, 8))
-    sns.set_style("whitegrid")
-    ax = sns.barplot(data=df_air_genre_district, orient="h", palette="viridis")
-    for container in ax.containers:
-        ax.bar_label(container, padding=3)
-    plt.title("districts")
-    sns.despine()
-    plt.show()
-
-
-def build_barplot_for_air_blocks(data):
-    df_air_genre_block = data.block.value_counts()
-    plt.figure(figsize=(12, 8))
-    sns.set_style("whitegrid")
-    ax = sns.barplot(data=df_air_genre_block, orient="h", legend=False, palette="viridis")
-    for container in ax.containers:
-        ax.bar_label(container, padding=3)
-    plt.title("blocks")
-    sns.despine()
-    plt.show()
-
-
-def plot_median_visitors_per_prefecture(df: pd.DataFrame):
-    genre_stats = (
-        df.groupby("prefecture")["visitors"].median().sort_values(ascending=False).reset_index()
-    )
-
-    plt.figure(figsize=(12, 8))
-    sns.set_style("whitegrid")
-
-    ax = sns.barplot(data=genre_stats, x="visitors", y="prefecture", palette="viridis")
-
-    for container in ax.containers:
-        ax.bar_label(container, padding=3)
-    plt.title("Median Visitors by prefecture", fontsize=16, pad=20)
-    plt.xlabel("Median Daily Visitors", fontsize=12)
-    plt.ylabel("Genre", fontsize=12)
-
-    sns.despine(left=True, bottom=True)
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_median_visitors_per_district(df: pd.DataFrame):
-    genre_stats = (
-        df.groupby("district")["visitors"].median().sort_values(ascending=False).reset_index()
-    )
-
-    plt.figure(figsize=(12, 8))
-    sns.set_style("whitegrid")
-
-    ax = sns.barplot(data=genre_stats.iloc[0:25], x="visitors", y="district", palette="viridis")
-
-    for container in ax.containers:
-        ax.bar_label(container, padding=3)
-    plt.title("Median Visitors by district", fontsize=16, pad=20)
-    plt.xlabel("Median Daily Visitors", fontsize=12)
-    plt.ylabel("Genre", fontsize=12)
-
-    sns.despine(left=True, bottom=True)
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_median_visitors_per_block(df: pd.DataFrame):
-    genre_stats = (
-        df.groupby("block")["visitors"].median().sort_values(ascending=False).reset_index()
-    )
-
-    plt.figure(figsize=(12, 8))
-    sns.set_style("whitegrid")
-
-    ax = sns.barplot(data=genre_stats.iloc[0:25], x="visitors", y="block", palette="viridis")
-
-    for container in ax.containers:
-        ax.bar_label(container, padding=3)
-    plt.title("Median Visitors by block", fontsize=16, pad=20)
-    plt.xlabel("Median Daily Visitors", fontsize=12)
-    plt.ylabel("Genre", fontsize=12)
-
-    sns.despine(left=True, bottom=True)
     plt.tight_layout()
     plt.show()
 
@@ -409,6 +286,7 @@ def plot_hpg_coverage(df: pd.DataFrame):
         colors=colors,
         pctdistance=0.85,
         explode=(0.05, 0),
+        legend=True
     )
 
     plt.title("HPG Store ID Mapping Coverage", fontsize=15, pad=20)
@@ -416,6 +294,80 @@ def plot_hpg_coverage(df: pd.DataFrame):
     plt.tight_layout()
     plt.show()
 
+
+def build_categorical_count_plot(
+        data: pd.DataFrame,
+        column: str,
+        title: str,
+        top_n: int = 0):
+
+    counts = data[column].value_counts()
+    if top_n > 0:
+        counts = counts.head(top_n)
+
+    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+    
+    ax = sns.barplot(
+        x=counts.values, 
+        y=counts.index, 
+        hue=counts.index, 
+        palette="viridis", 
+        legend=True
+    )
+    
+    for container in ax.containers:
+        ax.bar_label(container, padding=3)
+        
+    plt.title(title, fontsize=16, pad=20)
+    plt.xlabel("Count", fontsize=12)
+    plt.ylabel(column.replace('_', ' ').title(), fontsize=12)
+    
+    sns.despine()
+    plt.tight_layout()
+    plt.show()
+
+
+def build_target_by_category_plot(
+    df: pd.DataFrame, 
+    group_col: str, 
+    target_col: str = "visitors", 
+    agg_func: str = "median", 
+    title: str = "", 
+    top_n: int = 25
+):
+    stats = (
+        df.groupby(group_col)[target_col]
+        .agg(agg_func)
+        .sort_values(ascending=False)
+        .reset_index()
+    )
+    
+    if top_n > 0:
+        stats = stats.head(top_n)
+
+    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+
+    ax = sns.barplot(
+        data=stats, 
+        x=target_col, 
+        y=group_col, 
+        hue=group_col, 
+        palette="viridis", 
+        legend=True
+    )
+
+    for container in ax.containers:
+        ax.bar_label(container, padding=3)
+        
+    plt.title(title or f"{agg_func.title()} {target_col} by {group_col}", fontsize=16, pad=20)
+    plt.xlabel(f"{agg_func.title()} {target_col}", fontsize=12)
+    plt.ylabel(group_col.replace('_', ' ').title(), fontsize=12)
+
+    sns.despine(left=True, bottom=True)
+    plt.tight_layout()
+    plt.show()
 
 @app.command()
 def main(
