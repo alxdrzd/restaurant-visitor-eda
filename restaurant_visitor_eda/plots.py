@@ -68,7 +68,6 @@ def build_visitors_boxplot(
     plt.show()
 
 
-
 def plot_visitors_boxplot_air_by_holiday(df: pd.DataFrame):
     sorted_idx = df.groupby("holiday_flg")["visitors"].median().sort_values(ascending=False).index
 
@@ -89,6 +88,7 @@ def plot_visitors_boxplot_air_by_holiday(df: pd.DataFrame):
     plt.ylabel("holiday")
     plt.tight_layout()
     plt.show()
+
 
 def plot_visitors_over_year(df: pd.DataFrame):
     median_ = df.groupby("visit_datetime")["visitors"].median()
