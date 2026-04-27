@@ -337,7 +337,7 @@ def time_gap(df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
 
 
 def data_recency(df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
-    train_max = df_train["visit_date"].min(), df_train["visit_date"].max()
+    train_max = df_train["visit_date"].max()
 
     test_ids = df_test["air_store_id"].unique()
 
@@ -358,6 +358,75 @@ def data_recency(df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
         color_discrete_sequence=["indianred"],
     )
     fig_recency.show()
+
+
+def plot_reservation_lead_time(
+    df_air_reserve: pd.DataFrame, df_hpg_reserve: pd.DataFrame, max_days: int = 60
+) -> None:
+    air = df_air_reserve[["visit_datetime", "reserve_datetime"]].copy()
+    air["System"] = "Air"
+
+    hpg = df_hpg_reserve[["visit_datetime", "reserve_datetime"]].copy()
+    hpg["System"] = "HPG"
+
+    df_res = pd.concat([air, hpg], ignore_index=True)
+
+    df_res["visit_datetime"] = pd.to_datetime(df_res["visit_datetime"])
+    df_res["reserve_datetime"] = pd.to_datetime(df_res["reserve_datetime"])
+
+    df_res["lead_time_days"] = (df_res["visit_datetime"] - df_res["reserve_datetime"]).dt.days
+    df_plot = df_res[df_res["lead_time_days"] <= max_days]
+
+    fig = px.histogram(
+        df_plot,
+        x="lead_time_days",
+        color="System",
+        nbins=max_days + 1,
+        barmode="overlay",
+        title="Reservation Lead Time: Days Between Booking and Visit",
+        labels={"lead_time_days": "Days to Visit", "System": "Booking System"},
+        color_discrete_map={"AirREGI": "#1f77b4", "HPG": "#ff7f0e"},
+    )
+
+    fig.update_layout(
+        xaxis_title="Days from Reservation to Visit (0 = Same Day)",
+        yaxis_title="Number of Reservations",
+        bargap=0.1,
+        template="plotly_white",
+        hovermode="x unified",
+    )
+    fig.update_traces(opacity=0.75)
+    fig.show()
+
+
+def plot_golden_week_traffic(df_final: pd.DataFrame, year: int = 2016) -> None:
+    start_date = pd.to_datetime(f"{year}-04-20")
+    end_date = pd.to_datetime(f"{year}-05-15")
+
+    mask = (df_final["visit_date"] >= start_date) & (df_final["visit_date"] <= end_date)
+    df_gw = df_final[mask].copy()
+
+    daily_visitors = df_gw.groupby(["visit_date", "holiday_flg"])["visitors"].sum().reset_index()
+    daily_visitors["Is Holiday"] = daily_visitors["holiday_flg"].map({1: "Yes", 0: "No"})
+
+    fig = px.bar(
+        daily_visitors,
+        x="visit_date",
+        y="visitors",
+        color="Is Holiday",
+        color_discrete_map={"Yes": "#d62728", "No": "#1f77b4"},
+        title=f"Golden Week ({year}): Total Daily Visitors",
+        text="visitors",
+    )
+
+    fig.update_traces(textposition="outside")
+    fig.update_layout(
+        xaxis_title="Visit Date",
+        yaxis_title="Total Visitors",
+        template="plotly_white",
+        xaxis_tickangle=-45,
+    )
+    fig.show()
 
 
 @app.command()
