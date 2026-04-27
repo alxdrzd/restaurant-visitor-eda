@@ -28,6 +28,7 @@ dependencies = [
     "pandas",
     "pandas-stubs~=2.3.3",
     "pip",
+    "plotly>=6.7.0",
     "python-dotenv",
     "ruff",
     "scikit-learn",
@@ -35,6 +36,7 @@ dependencies = [
     "setuptools>=82.0.1",
     "tqdm",
     "typer",
+    "ydata-profiling>=4.18.4",
 ]
 requires-python = "~=3.10.0"
 

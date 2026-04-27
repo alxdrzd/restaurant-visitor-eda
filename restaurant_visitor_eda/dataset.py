@@ -36,7 +36,13 @@ def calculate_holiday_significance(df):
     if p_value < alpha:
         print("Result: The difference is significant.")
     else:
-        print("Результат: The difference is NOT significant.")
+        print("Result: The difference is NOT significant.")
+
+
+def process_test(df_test: pd.DataFrame) -> pd.DataFrame:
+    df_test["air_store_id"] = df_test["id"].str.rsplit("_", n=1, expand=True)[0]
+    df_test["visit_date"] = pd.to_datetime(df_test["id"].str.rsplit("_", n=1, expand=True)[1])
+    return df_test
 
 
 app = typer.Typer()

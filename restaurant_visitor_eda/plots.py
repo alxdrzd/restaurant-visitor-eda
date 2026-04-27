@@ -5,6 +5,8 @@ from loguru import logger
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 import seaborn as sns
 from tqdm import tqdm
 import typer
@@ -91,9 +93,9 @@ def plot_visitors_boxplot_air_by_holiday(df: pd.DataFrame):
 
 
 def plot_visitors_over_year(df: pd.DataFrame):
-    median_ = df.groupby("visit_datetime")["visitors"].median()
-    mean_ = df.groupby("visit_datetime")["visitors"].mean()
-    sum_ = df.groupby("visit_datetime")["visitors"].sum()
+    median_ = df.groupby("visit_date")["visitors"].median()
+    mean_ = df.groupby("visit_date")["visitors"].mean()
+    sum_ = df.groupby("visit_date")["visitors"].sum()
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     sns.set_style("whitegrid")
@@ -115,9 +117,9 @@ def plot_visitors_over_year(df: pd.DataFrame):
 
 
 def plot_visitors_with_rolling(df: pd.DataFrame, window=7):
-    median_ = df.groupby("visit_datetime")["visitors"].median()
-    mean_ = df.groupby("visit_datetime")["visitors"].mean()
-    sum_ = df.groupby("visit_datetime")["visitors"].sum()
+    median_ = df.groupby("visit_date")["visitors"].median()
+    mean_ = df.groupby("visit_date")["visitors"].mean()
+    sum_ = df.groupby("visit_date")["visitors"].sum()
 
     stats = [("Median", median_), ("Mean", mean_), ("Sum", sum_)]
 
@@ -141,7 +143,7 @@ def plot_visitors_with_rolling(df: pd.DataFrame, window=7):
 
 
 def plot_number_of_open_restaurants(df: pd.DataFrame):
-    data = df.groupby("visit_datetime")["air_store_id"].nunique()
+    data = df.groupby("visit_date")["air_store_id"].nunique()
     sns.lineplot(data=data)
     plt.grid(True, which="both", ls="-", alpha=0.2)
     plt.title("Number of opened restaurants")
@@ -262,6 +264,100 @@ def plot_heatmap(
     plt.title(f"{label} by {index} and {columns}")
     plt.tight_layout()
     plt.show()
+
+
+def train_test_overlap(df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
+    test_ids = df_test["air_store_id"].unique()
+    train_ids = df_train["air_store_id"].unique()
+
+    overlap_data = pd.DataFrame(
+        {
+            "Category": ["Total Train IDs", "Total Test IDs", "Common IDs", "Only in Test"],
+            "Count": [
+                len(train_ids),
+                len(test_ids),
+                len(set(train_ids) & set(test_ids)),
+                len(set(test_ids) - set(train_ids)),
+            ],
+        }
+    )
+
+    fig_overlap = px.bar(
+        overlap_data,
+        x="Category",
+        y="Count",
+        text="Count",
+        title="Train vs Test: Restaurant IDs Overlap",
+        color="Category",
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+    )
+    fig_overlap.update_traces(textposition="outside")
+    fig_overlap.show()
+
+
+def time_gap(df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
+    train_min, train_max = df_train["visit_date"].min(), df_train["visit_date"].max()
+    test_min, test_max = df_test["visit_date"].min(), df_test["visit_date"].max()
+
+    fig_gap = go.Figure()
+
+    fig_gap.add_trace(
+        go.Scatter(
+            x=[train_min, train_max],
+            y=["Timeline", "Timeline"],
+            mode="lines+markers+text",
+            name="Train Period",
+            line=dict(color="royalblue", width=20),
+            text=[f"Start: {train_min.date()}", f"End: {train_max.date()}"],
+            textposition="top center",
+        )
+    )
+
+    fig_gap.add_trace(
+        go.Scatter(
+            x=[test_min, test_max],
+            y=["Timeline", "Timeline"],
+            mode="lines+markers+text",
+            name="Test Period",
+            line=dict(color="orange", width=20),
+            text=[f"Start: {test_min.date()}", f"End: {test_max.date()}"],
+            textposition="bottom center",
+        )
+    )
+
+    fig_gap.update_layout(
+        title="Timeline of Train and Test Data",
+        yaxis={"showticklabels": False},
+        height=300,
+        showlegend=True,
+    )
+    fig_gap.show()
+
+    print(f"Gap duration: {(test_min - train_max).days} day(s)")
+
+
+def data_recency(df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
+    train_max = df_train["visit_date"].min(), df_train["visit_date"].max()
+
+    test_ids = df_test["air_store_id"].unique()
+
+    last_dates = (
+        df_train[df_train["air_store_id"].isin(test_ids)]
+        .groupby("air_store_id")["visit_date"]
+        .max()
+        .reset_index()
+    )
+
+    last_dates["days_missing_before_test"] = (train_max - last_dates["visit_date"]).dt.days
+
+    fig_recency = px.histogram(
+        last_dates,
+        x="days_missing_before_test",
+        title="Data Recency: How many days of data are missing right before the gap?",
+        labels={"days_missing_before_test": "Days of silence before April 22"},
+        color_discrete_sequence=["indianred"],
+    )
+    fig_recency.show()
 
 
 @app.command()
