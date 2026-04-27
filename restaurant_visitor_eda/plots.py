@@ -400,14 +400,19 @@ def plot_reservation_lead_time(
 
 
 def plot_golden_week_traffic(df_final: pd.DataFrame, year: int = 2016) -> None:
+
+    daily_avg_all = df_final.groupby("visit_date")["visitors"].mean()
+    overall_baseline = daily_avg_all.median()
+
     start_date = pd.to_datetime(f"{year}-04-20")
     end_date = pd.to_datetime(f"{year}-05-15")
-
     mask = (df_final["visit_date"] >= start_date) & (df_final["visit_date"] <= end_date)
     df_gw = df_final[mask].copy()
 
-    daily_visitors = df_gw.groupby(["visit_date", "holiday_flg"])["visitors"].sum().reset_index()
+    daily_visitors = df_gw.groupby(["visit_date", "holiday_flg"])["visitors"].mean().reset_index()
     daily_visitors["Is Holiday"] = daily_visitors["holiday_flg"].map({1: "Yes", 0: "No"})
+
+    daily_visitors["visitors_rounded"] = daily_visitors["visitors"].round(1)
 
     fig = px.bar(
         daily_visitors,
@@ -415,17 +420,51 @@ def plot_golden_week_traffic(df_final: pd.DataFrame, year: int = 2016) -> None:
         y="visitors",
         color="Is Holiday",
         color_discrete_map={"Yes": "#d62728", "No": "#1f77b4"},
-        title=f"Golden Week ({year}): Total Daily Visitors",
-        text="visitors",
+        title=f"Golden Week Anomaly ({year}): Average Visitors per Restaurant",
+        text="visitors_rounded",
+    )
+
+    fig.add_hline(
+        y=overall_baseline,
+        line_dash="dash",
+        line_color="#2ca02c",
+        annotation_text=f"Yearly Baseline (Avg/Rest): {overall_baseline:.1f}",
+        annotation_position="top left",
+        annotation_font_size=12,
+        annotation_font_color="#2ca02c",
+    )
+
+    gw_start = f"{year}-04-29"
+    gw_end = f"{year}-05-05"
+
+    fig.add_vline(
+        x=pd.to_datetime(gw_start).timestamp() * 1000,
+        line_width=2,
+        line_dash="dot",
+        line_color="orange",
+        annotation_text="Start (Apr 29)",
+        annotation_position="top left",
+    )
+
+    fig.add_vline(
+        x=pd.to_datetime(gw_end).timestamp() * 1000,
+        line_width=2,
+        line_dash="dot",
+        line_color="orange",
+        annotation_text="End (May 5)",
+        annotation_position="top right",
     )
 
     fig.update_traces(textposition="outside")
     fig.update_layout(
         xaxis_title="Visit Date",
-        yaxis_title="Total Visitors",
+        yaxis_title="Average Visitors per Restaurant",
         template="plotly_white",
         xaxis_tickangle=-45,
     )
+
+    fig.update_yaxes(range=[0, daily_visitors["visitors"].max() * 1.15])
+
     fig.show()
 
 
