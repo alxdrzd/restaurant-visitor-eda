@@ -6,7 +6,53 @@
 
 exploratory data analysis for the restaurant visitors data set for epam mentoring task
 
+## Getting Started
 
+This project uses `make` to automate common tasks and `uv` for lightning-fast dependency management.
+
+### Prerequisites
+Make sure you have [uv](https://github.com/astral-sh/uv) installed on your system.
+
+### 1. Set up the Environment
+To create a new virtual environment with Python 3.10, run:
+```bash
+make create_environment
+```
+*After creation, activate it using the instructions printed in your terminal (e.g., `source ./.venv/bin/activate` for Unix/macOS or `.\.venv\Scripts\activate` for Windows).*
+
+### 2. Install Dependencies
+Once the virtual environment is active, install all required packages:
+```bash
+make requirements
+```
+
+### 3. Run Exploratory Data Analysis
+All EDA processes and plots are executed inside Jupyter Notebooks located in the `notebooks/` directory. If you want to run the raw data processing script, use:
+```bash
+make data
+```
+
+### Code Quality & Linting
+This project enforces code quality using `ruff`.
+
+* **Format code:** Auto-fix errors and format files. Run this before committing your code:
+  ```bash
+  make format
+  ```
+* **Lint code:** Check for style guide violations without modifying the files:
+  ```bash
+  make lint
+  ```
+
+### Utility Commands
+* **Clean up:** Delete all compiled Python files (`.pyc` and `__pycache__`):
+  ```bash
+  make clean
+  ```
+* **Help:** List all available make commands:
+  ```bash
+  make help
+  ```
 
 ## Project Organization
 
