@@ -29,7 +29,6 @@ def calculate_holiday_significance(df):
 
     stat, p_value = stats.mannwhitneyu(holiday_visitors, workday_visitors, alternative="two-sided")
 
-    print(f"Statistic: {stat:.2f}")
     print(f"P-value: {p_value:.10f}")
 
     alpha = 0.05
