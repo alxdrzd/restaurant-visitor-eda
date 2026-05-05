@@ -514,6 +514,46 @@ def plot_reserved_vs_actual(df: pd.DataFrame) -> None:
     fig.show()
 
 
+def plot_restaurants_map(df: pd.DataFrame) -> None:
+    df_sorted = df.sort_values(by="median_visitors", ascending=False)
+
+    fig = px.scatter_mapbox(
+        df_sorted,
+        lat="latitude",
+        lon="longitude",
+        color="air_genre_name",
+        size="median_visitors",
+        hover_name="air_store_id",
+        hover_data={
+            "air_genre_name": True,
+            "air_area_name": True,
+            "median_visitors": True,
+            "latitude": False,
+            "longitude": False,
+        },
+        color_discrete_sequence=px.colors.qualitative.Alphabet,
+        zoom=4.5,
+        center={"lat": 36.2048, "lon": 138.2529},
+        title="Interactive Map of Restaurants (Size = Median Daily Visitors)",
+        mapbox_style="carto-positron",
+        size_max=15,
+    )
+
+    fig.update_layout(
+        margin={"r": 0, "t": 40, "l": 0, "b": 0},
+        legend=dict(
+            title="Genre",
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            bgcolor="rgba(255, 255, 255, 0.8)",
+        ),
+    )
+
+    fig.show()
+
+
 @app.command()
 def main(
     # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
