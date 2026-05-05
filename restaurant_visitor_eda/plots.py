@@ -478,8 +478,8 @@ def plot_reserved_vs_actual(df: pd.DataFrame) -> None:
         opacity=0.4,
         title='Reserved Visitors vs Actual Visitors',
         labels={
-            'reserve_visitors': 'Total Reserved Visitors (via Booking)',
-            'visitors': 'Actual Total Visitors (Target)'
+            'reserve_visitors': 'Total Reserved Visitors',
+            'visitors': 'Actual Total Visitors'
         },
         color_discrete_sequence=['#1f77b4']
     )
