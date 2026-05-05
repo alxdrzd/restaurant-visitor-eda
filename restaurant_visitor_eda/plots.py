@@ -469,44 +469,48 @@ def plot_golden_week_traffic(df_final: pd.DataFrame, year: int = 2016) -> None:
 
 
 def plot_reserved_vs_actual(df: pd.DataFrame) -> None:
-    max_val = max(df['reserve_visitors'].max(), df['visitors'].max())
-    
+    max_val = max(df["reserve_visitors"].max(), df["visitors"].max())
+
     fig = px.scatter(
         df,
-        x='reserve_visitors',
-        y='visitors',
+        x="reserve_visitors",
+        y="visitors",
         opacity=0.4,
-        title='Reserved Visitors vs Actual Visitors',
+        title="Reserved Visitors vs Actual Visitors",
         labels={
-            'reserve_visitors': 'Total Reserved Visitors',
-            'visitors': 'Actual Total Visitors'
+            "reserve_visitors": "Total Reserved Visitors",
+            "visitors": "Actual Total Visitors",
         },
-        color_discrete_sequence=['#1f77b4']
+        color_discrete_sequence=["#1f77b4"],
     )
 
     fig.add_shape(
-        type="line", 
-        line=dict(dash='dash', color="red", width=2),
-        x0=0, y0=0, x1=max_val, y1=max_val
+        type="line",
+        line=dict(dash="dash", color="red", width=2),
+        x0=0,
+        y0=0,
+        x1=max_val,
+        y1=max_val,
     )
-    
-    fig.add_trace(go.Scatter(
-        x=[None], y=[None],
-        mode='lines',
-        line=dict(dash='dash', color="red", width=2),
-        name='100% Reserved (No Walk-ins)'
-    ))
-    
+
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="lines",
+            line=dict(dash="dash", color="red", width=2),
+            name="100% Reserved (No Walk-ins)",
+        )
+    )
+
     fig.update_layout(
         template="plotly_white",
         showlegend=True,
         legend=dict(
-            yanchor="top", y=0.99, 
-            xanchor="left", x=0.01,
-            bgcolor="rgba(255, 255, 255, 0.8)"
-        )
+            yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255, 255, 255, 0.8)"
+        ),
     )
-    
+
     fig.show()
 
 
