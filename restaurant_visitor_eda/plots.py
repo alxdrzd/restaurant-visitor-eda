@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from loguru import logger
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -552,6 +553,84 @@ def plot_restaurants_map(df: pd.DataFrame) -> None:
     )
 
     fig.show()
+
+
+def plot_first_visit_distribution(df_visit: pd.DataFrame, gw_start: str = "2016-04-29") -> None:
+
+    first_visits = df_visit.groupby("air_store_id")["visit_date"].min().reset_index()
+    first_visits.rename(columns={"visit_date": "first_visit_date"}, inplace=True)
+
+    gw_date = pd.to_datetime(gw_start)
+    missed_gw_pct = (first_visits["first_visit_date"] > gw_date).mean() * 100
+
+    fig = px.histogram(
+        first_visits,
+        x="first_visit_date",
+        nbins=50,
+        title=f"Distribution of First Visit Dates<br><sup>{missed_gw_pct:.1f}% of restaurants appeared after Golden Week 2016</sup>",
+        labels={"first_visit_date": "Date of First Record"},
+        color_discrete_sequence=["#1f77b4"],
+    )
+
+    fig.add_vline(
+        x=gw_date.timestamp() * 1000,
+        line_width=2,
+        line_dash="dash",
+        line_color="red",
+        annotation_text="Golden Week 2016",
+        annotation_position="top right",
+    )
+
+    fig.update_layout(
+        yaxis_title="Number of New Restaurants", template="plotly_white", bargap=0.05
+    )
+    fig.show()
+
+
+def plot_restaurants_lifespan(df_visit: pd.DataFrame) -> None:
+    lifespan = (
+        df_visit.groupby("air_store_id")["visit_date"].agg(start="min", end="max").reset_index()
+    )
+
+    lifespan = lifespan.sort_values(by="start", ascending=False).reset_index(drop=True)
+    lifespan["y_index"] = lifespan.index
+
+    fig, ax = plt.subplots(figsize=(16, 8))
+
+    ax.hlines(
+        y=lifespan["y_index"],
+        xmin=lifespan["start"],
+        xmax=lifespan["end"],
+        color="#1f77b4",
+        linewidth=0.8,
+        alpha=0.7,
+    )
+
+    gw_2016 = mdates.date2num(pd.to_datetime("2016-04-29"))
+    gw_2017 = mdates.date2num(pd.to_datetime("2017-04-29"))
+
+    ax.axvline(gw_2016, color="#d62728", linestyle="--", linewidth=2, label="Golden Week 2016")
+    ax.axvline(
+        gw_2017,
+        color="#ff7f0e",
+        linestyle="--",
+        linewidth=2,
+        label="Golden Week 2017 (Test Data)",
+    )
+
+    ax.set_yticks([])
+    ax.set_ylabel("Restaurants (sorted by first visit date)", fontsize=12)
+    ax.set_xlabel("Timeline", fontsize=12)
+    ax.set_title("Lifespan of Restaurants in the Dataset (Data Depth)", fontsize=16, pad=15)
+
+    ax.legend(loc="upper left", fontsize=11, framealpha=0.9)
+
+    ax.grid(axis="x", linestyle="--", alpha=0.5)
+
+    sns.despine(left=True, right=True, top=True)
+
+    plt.tight_layout()
+    plt.show()
 
 
 @app.command()
