@@ -44,6 +44,25 @@ def process_test(df_test: pd.DataFrame) -> pd.DataFrame:
     return df_test
 
 
+def check_time_travel(
+    df: pd.DataFrame, reserve_col: str = "reserve_datetime", visit_col: str = "visit_datetime"
+) -> pd.DataFrame:
+    res_dates = pd.to_datetime(df[reserve_col])
+    vis_dates = pd.to_datetime(df[visit_col])
+
+    anomalies = df[res_dates > vis_dates]
+    anomalies_count = len(anomalies)
+
+    if anomalies_count == 0:
+        print("Time Travel was not found!")
+    else:
+        print(
+            " Found {anomalies_count} anomalies: reservation date is later than the day reservation was made"
+        )
+
+    return anomalies
+
+
 app = typer.Typer()
 
 
