@@ -23,7 +23,21 @@ requirements:
 .PHONY: clean
 clean:
 	find . -type f -name "*.py[co]" -delete
-	find . -type d -name "__pycache__" -delete
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	
+	find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
+	
+	rm -rf .ruff_cache/
+	rm -rf .mypy_cache/
+	rm -rf .pytest_cache/
+	
+	rm -rf site/
+	
+	rm -rf dist/
+	rm -rf build/
+	rm -rf *.egg-info/
+	
+	@echo ">>> Project cleaned up successfully!"
 
 
 ## Lint using ruff (use `make format` to do formatting)
