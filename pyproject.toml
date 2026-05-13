@@ -15,32 +15,36 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License"
 ]
+requires-python = ">=3.10"
+
 dependencies = [
+    "loguru",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "plotly>=6.7.0",
+    "python-dotenv",
+    "scikit-learn",
+    "seaborn>=0.13.2",
+    "tqdm",
+    "typer",
+]
+
+# Здесь всё, что нужно для локальной разработки, ноутбуков, качества кода и документации
+[dependency-groups]
+dev =[
     "ipython",
     "ipywidgets>=8.1.8",
     "jupyterlab",
     "kaggle>=1.7.4.5",
-    "loguru",
-    "matplotlib",
     "mkdocs",
     "mkdocs-material>=9.7.6",
     "notebook",
-    "numpy",
-    "pandas",
     "pandas-stubs~=2.3.3",
-    "pip",
-    "plotly>=6.7.0",
-    "python-dotenv",
     "ruff",
-    "scikit-learn",
-    "seaborn>=0.13.2",
-    "setuptools<70",
-    "tqdm",
-    "typer",
+    "ty>=0.0.32",
     "ydata-profiling>=4.18.4",
 ]
-requires-python = "~=3.10.0"
-
 
 [tool.ruff]
 line-length = 99
@@ -53,9 +57,3 @@ extend-select = ["I"]  # Add import sorting
 [tool.ruff.lint.isort]
 known-first-party = ["restaurant_visitor_eda"]
 force-sort-within-sections = true
-
-[dependency-groups]
-dev = [
-    "ty>=0.0.32",
-]
-

@@ -17,7 +17,7 @@ from restaurant_visitor_eda.config import FIGURES_DIR, PROCESSED_DATA_DIR
 app = typer.Typer()
 
 
-def plot_target_distribution(data):
+def plot_target_distribution(data: pd.DataFrame) -> None:
     fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
     ax = axes.flatten()
