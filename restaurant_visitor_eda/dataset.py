@@ -16,11 +16,11 @@ def count_unique_and_nans(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_stats(df: pd.DataFrame):
-    stats = df.describe(percentiles=[0.25, 0.5, 0.75, 0.95, 0.99])
-    stats.loc["median"] = df.median()
-    stats.loc["skewness"] = df.skew()
-    stats.loc["kurtosis"] = df.kurtosis()
-    return stats.round(3)
+    stats_df = df.describe(percentiles=[0.25, 0.5, 0.75, 0.95, 0.99])
+    stats_df.loc["median"] = df.median()
+    stats_df.loc["skewness"] = df.skew()
+    stats_df.loc["kurtosis"] = df.kurtosis()
+    return stats_df.round(3)
 
 
 def calculate_holiday_significance(df):

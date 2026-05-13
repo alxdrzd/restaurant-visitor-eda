@@ -386,7 +386,7 @@ def plot_reservation_lead_time(
         barmode="overlay",
         title="Reservation Lead Time: Days Between Booking and Visit",
         labels={"lead_time_days": "Days to Visit", "System": "Booking System"},
-        color_discrete_map={"AirREGI": "#1f77b4", "HPG": "#ff7f0e"},
+        color_discrete_map={"Air": "#1f77b4", "HPG": "#ff7f0e"},
     )
 
     fig.update_layout(
