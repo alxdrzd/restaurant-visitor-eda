@@ -688,6 +688,53 @@ def check_time_travel(
     return anomalies
 
 
+def plot_cv_error_vs_alpha(cv_results: dict) -> None:
+    results_df = pd.DataFrame(cv_results)
+
+    alphas = results_df["param_regression__alpha"].astype(float)
+
+    rmsle_scores = -results_df["mean_test_score"]
+
+    plot_df = pd.DataFrame({"Alpha": alphas, "RMSLE": rmsle_scores})
+
+    best_alpha = plot_df.loc[plot_df["RMSLE"].idxmin(), "Alpha"]
+    best_score = plot_df["RMSLE"].min()
+
+    fig = px.line(
+        plot_df,
+        x="Alpha",
+        y="RMSLE",
+        markers=True,
+        title="Validation Error vs. L2 Regularization (Alpha)",
+        labels={"Alpha": "Alpha (L2 Penalty)", "RMSLE": "Mean RMSLE (15 Folds)"},
+        color_discrete_sequence=["#1f77b4"],
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=[best_alpha],
+            y=[best_score],
+            mode="markers",
+            marker=dict(color="red", size=14, symbol="star"),
+            name=f"Best Alpha: {best_alpha:.2f}<br>Best RMSLE: {best_score:.4f}",
+            hovertemplate="Alpha: %{x:.2f}<br>RMSLE: %{y:.4f}<extra></extra>",
+        )
+    )
+
+    fig.update_xaxes(type="log")
+
+    fig.update_layout(
+        template="plotly_white",
+        hovermode="x unified",
+        legend=dict(
+            yanchor="top", y=0.95, xanchor="center", x=0.5, bgcolor="rgba(255, 255, 255, 0.8)"
+        ),
+        margin=dict(t=60, b=40, l=40, r=40),
+    )
+
+    fig.show()
+
+
 @app.command()
 def main(
     # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
