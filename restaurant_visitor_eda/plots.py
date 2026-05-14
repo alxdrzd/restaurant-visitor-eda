@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from scipy import stats
 import seaborn as sns
 from tqdm import tqdm
 import typer
@@ -631,6 +632,60 @@ def plot_restaurants_lifespan(df_visit: pd.DataFrame) -> None:
 
     plt.tight_layout()
     plt.show()
+
+
+def count_unique_and_nans(df: pd.DataFrame) -> pd.DataFrame:
+    return pd.DataFrame(
+        {"nan percentage": df.isna().mean() * 100, "unique": df.nunique()}
+    ).sort_values(by="nan percentage", ascending=False)
+
+
+def get_stats(df: pd.DataFrame):
+    stats_df = df.describe(percentiles=[0.25, 0.5, 0.75, 0.95, 0.99])
+    stats_df.loc["median"] = df.median()
+    stats_df.loc["skewness"] = df.skew()
+    stats_df.loc["kurtosis"] = df.kurtosis()
+    return stats_df.round(3)
+
+
+def calculate_holiday_significance(df):
+    holiday_visitors = df[df["holiday_flg"] == 1]["visitors"]
+    workday_visitors = df[df["holiday_flg"] == 0]["visitors"]
+
+    stat, p_value = stats.mannwhitneyu(holiday_visitors, workday_visitors, alternative="two-sided")
+
+    print(f"P-value: {p_value:.10f}")
+
+    alpha = 0.05
+    if p_value < alpha:
+        print("Result: The difference is significant.")
+    else:
+        print("Result: The difference is NOT significant.")
+
+
+def process_test(df_test: pd.DataFrame) -> pd.DataFrame:
+    df_test["air_store_id"] = df_test["id"].str.rsplit("_", n=1, expand=True)[0]
+    df_test["visit_date"] = pd.to_datetime(df_test["id"].str.rsplit("_", n=1, expand=True)[1])
+    return df_test
+
+
+def check_time_travel(
+    df: pd.DataFrame, reserve_col: str = "reserve_datetime", visit_col: str = "visit_datetime"
+) -> pd.DataFrame:
+    res_dates = pd.to_datetime(df[reserve_col])
+    vis_dates = pd.to_datetime(df[visit_col])
+
+    anomalies = df[res_dates > vis_dates]
+    anomalies_count = len(anomalies)
+
+    if anomalies_count == 0:
+        print("Time Travel was not found!")
+    else:
+        print(
+            " Found {anomalies_count} anomalies: reservation date is later than the day reservation was made"
+        )
+
+    return anomalies
 
 
 @app.command()
