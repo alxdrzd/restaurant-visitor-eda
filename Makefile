@@ -44,6 +44,7 @@ clean:
 .PHONY: lint
 lint:
 	ruff format --check
+	ruff format
 	ruff check
 	ty check
 

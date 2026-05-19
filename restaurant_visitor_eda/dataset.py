@@ -51,7 +51,7 @@ def build_date_features(df_date: pd.DataFrame) -> pd.DataFrame:
 def main(
     raw_dir: Path = RAW_DATA_DIR,
     processed_dir: Path = PROCESSED_DATA_DIR,
-):
+) -> None:
     logger.info("1. Reading raw data from data/raw/ ...")
     df_visit = pd.read_csv(raw_dir / "air_visit_data.csv")
     df_store = pd.read_csv(raw_dir / "air_store_info.csv")

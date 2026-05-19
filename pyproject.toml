@@ -30,7 +30,6 @@ dependencies = [
     "typer",
 ]
 
-# Здесь всё, что нужно для локальной разработки, ноутбуков, качества кода и документации
 [dependency-groups]
 dev =[
     "ipython",
@@ -52,7 +51,12 @@ src = ["restaurant_visitor_eda"]
 include = ["pyproject.toml", "restaurant_visitor_eda/**/*.py"]
 
 [tool.ruff.lint]
-extend-select = ["I"]  # Add import sorting
+extend-select = ["E", "F", "I", "ANN"]  
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
 
 [tool.ruff.lint.isort]
 known-first-party = ["restaurant_visitor_eda"]

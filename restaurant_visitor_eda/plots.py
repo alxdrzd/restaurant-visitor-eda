@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Literal, Optional
 
 from loguru import logger
 import matplotlib.dates as mdates
@@ -16,6 +16,8 @@ import typer
 from restaurant_visitor_eda.config import FIGURES_DIR, PROCESSED_DATA_DIR
 
 app = typer.Typer()
+
+AggFuncType = Literal["mean", "sum", "count", "min", "max", "median"]
 
 
 def plot_target_distribution(data: pd.DataFrame) -> None:
@@ -49,7 +51,7 @@ def plot_target_distribution(data: pd.DataFrame) -> None:
 
 def build_visitors_boxplot(
     df: pd.DataFrame, y_col: str, hue_col: Optional[str] = None, title: str = ""
-):
+) -> None:
     order = (
         df.groupby(y_col, observed=True)["visitors"].median().sort_values(ascending=False).index
     )
@@ -72,7 +74,7 @@ def build_visitors_boxplot(
     plt.show()
 
 
-def plot_visitors_boxplot_air_by_holiday(df: pd.DataFrame):
+def plot_visitors_boxplot_air_by_holiday(df: pd.DataFrame) -> None:
     sorted_idx = df.groupby("holiday_flg")["visitors"].median().sort_values(ascending=False).index
 
     sns.boxplot(
@@ -94,7 +96,7 @@ def plot_visitors_boxplot_air_by_holiday(df: pd.DataFrame):
     plt.show()
 
 
-def plot_visitors_over_year(df: pd.DataFrame):
+def plot_visitors_over_year(df: pd.DataFrame) -> None:
     median_ = df.groupby("visit_date")["visitors"].median()
     mean_ = df.groupby("visit_date")["visitors"].mean()
     sum_ = df.groupby("visit_date")["visitors"].sum()
@@ -118,7 +120,7 @@ def plot_visitors_over_year(df: pd.DataFrame):
     plt.show()
 
 
-def plot_visitors_with_rolling(df: pd.DataFrame, window=7):
+def plot_visitors_with_rolling(df: pd.DataFrame, window: int = 7) -> None:
     median_ = df.groupby("visit_date")["visitors"].median()
     mean_ = df.groupby("visit_date")["visitors"].mean()
     sum_ = df.groupby("visit_date")["visitors"].sum()
@@ -144,7 +146,7 @@ def plot_visitors_with_rolling(df: pd.DataFrame, window=7):
     plt.show()
 
 
-def plot_number_of_open_restaurants(df: pd.DataFrame):
+def plot_number_of_open_restaurants(df: pd.DataFrame) -> None:
     data = df.groupby("visit_date")["air_store_id"].nunique()
     sns.lineplot(data=data)
     plt.grid(True, which="both", ls="-", alpha=0.2)
@@ -155,7 +157,7 @@ def plot_number_of_open_restaurants(df: pd.DataFrame):
     plt.show()
 
 
-def plot_hpg_coverage(df: pd.DataFrame):
+def plot_hpg_coverage(df: pd.DataFrame) -> None:
     plt.figure(figsize=(5, 5))
 
     status_counts = df["hpg_store_id"].isna().value_counts()
@@ -183,7 +185,9 @@ def plot_hpg_coverage(df: pd.DataFrame):
     plt.show()
 
 
-def build_categorical_count_plot(data: pd.DataFrame, column: str, title: str, top_n: int = 0):
+def build_categorical_count_plot(
+    data: pd.DataFrame, column: str, title: str, top_n: int = 0
+) -> None:
 
     counts = data[column].value_counts()
     if top_n > 0:
@@ -215,7 +219,7 @@ def build_target_by_category_plot(
     agg_func: str = "median",
     title: str = "",
     top_n: int = 25,
-):
+) -> None:
     stats = (
         df.groupby(group_col)[target_col].agg(agg_func).sort_values(ascending=False).reset_index()
     )
@@ -243,9 +247,12 @@ def build_target_by_category_plot(
 
 
 def plot_heatmap(
-    df: pd.DataFrame, index: str, columns: str, values: str = "visitors", agg_func: Any = "count"
-):
-    """Universal heatmap for cross-categorical analysis."""
+    df: pd.DataFrame,
+    index: str,
+    columns: str,
+    values: str = "visitors",
+    agg_func: AggFuncType = "count",
+) -> None:
     if agg_func == "count":
         pivot = pd.crosstab(df[index], df[columns])
         label = "Count"
@@ -568,7 +575,10 @@ def plot_first_visit_distribution(df_visit: pd.DataFrame, gw_start: str = "2016-
         first_visits,
         x="first_visit_date",
         nbins=50,
-        title=f"Distribution of First Visit Dates<br><sup>{missed_gw_pct:.1f}% of restaurants appeared after Golden Week 2016</sup>",
+        title=(
+            f"Distribution of First Visit Dates<br><sup>{missed_gw_pct:.1f}%"
+            + " of restaurants appeared after Golden Week 2016</sup>"
+        ),
         labels={"first_visit_date": "Date of First Record"},
         color_discrete_sequence=["#1f77b4"],
     )
@@ -640,7 +650,7 @@ def count_unique_and_nans(df: pd.DataFrame) -> pd.DataFrame:
     ).sort_values(by="nan percentage", ascending=False)
 
 
-def get_stats(df: pd.DataFrame):
+def get_stats(df: pd.DataFrame) -> pd.DataFrame:
     stats_df = df.describe(percentiles=[0.25, 0.5, 0.75, 0.95, 0.99])
     stats_df.loc["median"] = df.median()
     stats_df.loc["skewness"] = df.skew()
@@ -648,7 +658,7 @@ def get_stats(df: pd.DataFrame):
     return stats_df.round(3)
 
 
-def calculate_holiday_significance(df):
+def calculate_holiday_significance(df: pd.DataFrame) -> None:
     holiday_visitors = df[df["holiday_flg"] == 1]["visitors"]
     workday_visitors = df[df["holiday_flg"] == 0]["visitors"]
 
@@ -682,7 +692,8 @@ def check_time_travel(
         print("Time Travel was not found!")
     else:
         print(
-            " Found {anomalies_count} anomalies: reservation date is later than the day reservation was made"
+            f"Found {anomalies_count} anomalies: reservation date"
+            + " is later than the day reservation was made"
         )
 
     return anomalies
@@ -741,7 +752,7 @@ def main(
     input_path: Path = PROCESSED_DATA_DIR / "dataset.csv",
     output_path: Path = FIGURES_DIR / "plot.png",
     # -----------------------------------------
-):
+) -> None:
     # ---- REPLACE THIS WITH YOUR OWN CODE ----
     logger.info("Generating plot from data...")
     for i in tqdm(range(10), total=10):
