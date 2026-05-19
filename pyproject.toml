@@ -40,6 +40,7 @@ dev =[
     "mkdocs-material",
     "notebook",
     "pandas-stubs",
+    "pre-commit>=4.6.0",
     "ruff",
     "ty",
     "ydata-profiling",
@@ -51,7 +52,7 @@ src = ["restaurant_visitor_eda"]
 include = ["pyproject.toml", "restaurant_visitor_eda/**/*.py"]
 
 [tool.ruff.lint]
-extend-select = ["E", "F", "I", "ANN"]  
+extend-select = ["E", "F", "I", "ANN"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -4,81 +4,55 @@
 
 PROJECT_NAME = restaurant-visitor-eda
 PYTHON_VERSION = 3.10
-PYTHON_INTERPRETER = python
+PYTHON_INTERPRETER = uv run python
 
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################
 
-
-## Install Python dependencies
+## Install Python dependencies from uv.lock
 .PHONY: requirements
 requirements:
 	uv sync
-	
 
-
-
-## Delete all compiled Python files
+## Delete all compiled Python files and caches
 .PHONY: clean
 clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -exec rm -rf {} +
-	
 	find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
-	
 	rm -rf .ruff_cache/
 	rm -rf .mypy_cache/
 	rm -rf .pytest_cache/
-	
-	rm -rf site/
-	
-	rm -rf dist/
-	rm -rf build/
-	rm -rf *.egg-info/
-	
+	rm -rf site/ dist/ build/ *.egg-info/
 	@echo ">>> Project cleaned up successfully!"
 
-
-## Lint using ruff (use `make format` to do formatting)
-.PHONY: lint
-lint:
-	ruff format --check
-	ruff format
-	ruff check
-	ty check
-
-## Format source code with ruff
+## Format source code with ruff (modifies files)
 .PHONY: format
 format:
-	ruff check --fix
-	ruff format
+	uv run ruff check --fix
+	uv run ruff format
 
-
-
-
+## Run all pre-commit hooks (lint, format, type-check) on all files
+.PHONY: lint
+lint:
+	uv run pre-commit run --all-files
 
 ## Set up Python interpreter environment
 .PHONY: create_environment
 create_environment:
 	uv venv --python $(PYTHON_VERSION)
 	@echo ">>> New uv virtual environment created. Activate with:"
-	@echo ">>> Windows: .\\\\.venv\\\\Scripts\\\\activate"
-	@echo ">>> Unix/macOS: source ./.venv/bin/activate"
-	
-
-
+	@echo ">>> source .venv/bin/activate"
 
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
 
-
-## Make dataset
+## Run data processing script
 .PHONY: data
 data: requirements
 	$(PYTHON_INTERPRETER) restaurant_visitor_eda/dataset.py
-
 
 #################################################################################
 # Self Documenting Commands                                                     #
