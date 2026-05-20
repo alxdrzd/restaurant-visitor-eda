@@ -52,7 +52,8 @@ create_environment:
 ## Run data processing script
 .PHONY: data
 data: requirements
-	$(PYTHON_INTERPRETER) restaurant_visitor_eda/dataset.py
+	uv run python -m restaurant_visitor_eda.dataset
+	uv run python -m restaurant_visitor_eda.features
 
 #################################################################################
 # Self Documenting Commands                                                     #

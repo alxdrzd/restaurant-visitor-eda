@@ -194,3 +194,8 @@ cython_debug/
 #IDEs
 .idea
 .vscode
+
+notebooks/submission_*.csv
+
+# CatBoost
+catboost_info/

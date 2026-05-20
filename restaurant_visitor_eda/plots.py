@@ -1,7 +1,5 @@
-from pathlib import Path
 from typing import Literal, Optional
 
-from loguru import logger
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,10 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from scipy import stats
 import seaborn as sns
-from tqdm import tqdm
 import typer
-
-from restaurant_visitor_eda.config import FIGURES_DIR, PROCESSED_DATA_DIR
 
 app = typer.Typer()
 
@@ -747,19 +742,8 @@ def plot_cv_error_vs_alpha(cv_results: dict) -> None:
 
 
 @app.command()
-def main(
-    # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
-    input_path: Path = PROCESSED_DATA_DIR / "dataset.csv",
-    output_path: Path = FIGURES_DIR / "plot.png",
-    # -----------------------------------------
-) -> None:
-    # ---- REPLACE THIS WITH YOUR OWN CODE ----
-    logger.info("Generating plot from data...")
-    for i in tqdm(range(10), total=10):
-        if i == 5:
-            logger.info("Something happened for iteration 5.")
-    logger.success("Plot generation complete.")
-    # -----------------------------------------
+def main() -> None:
+    pass
 
 
 if __name__ == "__main__":
