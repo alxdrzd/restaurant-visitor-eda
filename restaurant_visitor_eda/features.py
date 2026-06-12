@@ -10,11 +10,11 @@ from restaurant_visitor_eda.config import PROCESSED_DATA_DIR
 app = typer.Typer()
 
 
-def build_features_advanced(df_old: pd.DataFrame) -> pd.DataFrame:
+def build_base_calendar_features(df_old: pd.DataFrame) -> pd.DataFrame:
     df = df_old.copy()
 
-    df["doy_sin"] = np.sin(2 * np.pi * df["visit_date"].dt.dayofyear / 365.25)
-    df["doy_cos"] = np.cos(2 * np.pi * df["visit_date"].dt.dayofyear / 365.25)
+    df["doy_sin"] = np.sin(2 * np.pi * df["visit_date"].dt.dayofyear / 366)
+    df["doy_cos"] = np.cos(2 * np.pi * df["visit_date"].dt.dayofyear / 366)
 
     df["dow_sin"] = np.sin(2 * np.pi * df["day_of_week_num"] / 7)
     df["dow_cos"] = np.cos(2 * np.pi * df["day_of_week_num"] / 7)
@@ -26,72 +26,146 @@ def build_features_advanced(df_old: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_visitor_aggregations(df_old: pd.DataFrame, df_train: pd.DataFrame) -> pd.DataFrame:
-    df = df_old.copy()
+def build_time_series_features(
+    df_train: pd.DataFrame, df_test: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    df_train = df_train.copy()
+    df_test = df_test.copy()
 
-    store_dow_stats = (
-        df_train.groupby(["air_store_id", "day_of_week"])["visitors"]
-        .agg(
-            median_visitors_dow="median",
-            mean_visitors_dow="mean",
-            min_visitors_dow="min",
-            max_visitors_dow="max",
-        )
-        .reset_index()
+    df_train = df_train.sort_values(["air_store_id", "visit_date"]).reset_index(drop=True)
+
+    df_train["visitors_shifted"] = df_train.groupby("air_store_id")["visitors"].shift(1)
+    df_train["visitors_dow_shifted"] = df_train.groupby(["air_store_id", "day_of_week"])[
+        "visitors"
+    ].shift(1)
+
+    df_train["store_mean_cum"] = (
+        df_train.groupby("air_store_id")["visitors_shifted"]
+        .expanding()
+        .mean()
+        .reset_index(level=0, drop=True)
+    )
+    df_train["store_dow_mean_cum"] = (
+        df_train.groupby(["air_store_id", "day_of_week"])["visitors_dow_shifted"]
+        .expanding()
+        .mean()
+        .reset_index(level=[0, 1], drop=True)
+    )
+
+    df_train["store_roll_mean_14"] = (
+        df_train.groupby("air_store_id")["visitors_shifted"]
+        .rolling(14, min_periods=1)
+        .mean()
+        .reset_index(level=0, drop=True)
+    )
+    df_train["store_roll_mean_28"] = (
+        df_train.groupby("air_store_id")["visitors_shifted"]
+        .rolling(28, min_periods=1)
+        .mean()
+        .reset_index(level=0, drop=True)
+    )
+
+    df_date_sorted = df_train.sort_values("visit_date").reset_index(drop=True)
+    df_date_sorted["genre_geo_shifted"] = df_date_sorted.groupby(["air_genre_name", "prefecture"])[
+        "visitors"
+    ].shift(1)
+    df_date_sorted["genre_shifted"] = df_date_sorted.groupby(["air_genre_name"])["visitors"].shift(
+        1
+    )
+
+    df_date_sorted["genre_geo_mean_cum"] = (
+        df_date_sorted.groupby(["air_genre_name", "prefecture"])["genre_geo_shifted"]
+        .expanding()
+        .mean()
+        .reset_index(level=[0, 1], drop=True)
+    )
+    df_date_sorted["genre_mean_cum"] = (
+        df_date_sorted.groupby(["air_genre_name"])["genre_shifted"]
+        .expanding()
+        .mean()
+        .reset_index(level=0, drop=True)
+    )
+
+    df_train = pd.merge(
+        df_train,
+        df_date_sorted[["air_store_id", "visit_date", "genre_geo_mean_cum", "genre_mean_cum"]],
+        on=["air_store_id", "visit_date"],
+        how="left",
     )
 
     store_stats = (
         df_train.groupby("air_store_id")["visitors"]
-        .agg(median_visitors_total="median")
+        .mean()
         .reset_index()
+        .rename(columns={"visitors": "store_mean_cum"})
     )
-
-    df = pd.merge(df, store_dow_stats, on=["air_store_id", "day_of_week"], how="left")
-    df = pd.merge(df, store_stats, on=["air_store_id"], how="left")
-
-    for col in [
-        "median_visitors_dow",
-        "mean_visitors_dow",
-        "min_visitors_dow",
-        "max_visitors_dow",
-    ]:
-        df[col] = df[col].fillna(df["median_visitors_total"])
-
-    gw_2016_train = df_train[
-        (df_train["visit_date"] >= "2016-04-29") & (df_train["visit_date"] <= "2016-05-05")
-    ]
-
-    stores_with_gw_history = set(gw_2016_train["air_store_id"].unique())
-    df["has_gw_history"] = df["air_store_id"].isin(stores_with_gw_history).astype(np.int8)
-
-    gw_genre_geo_stats = (
-        gw_2016_train.groupby(["air_genre_name", "prefecture"])["visitors"]
-        .agg(gw_genre_geo_median="median")
+    store_dow_stats = (
+        df_train.groupby(["air_store_id", "day_of_week"])["visitors"]
+        .mean()
         .reset_index()
+        .rename(columns={"visitors": "store_dow_mean_cum"})
     )
 
-    df = pd.merge(df, gw_genre_geo_stats, on=["air_genre_name", "prefecture"], how="left")
-
-    gw_genre_global = gw_2016_train.groupby("air_genre_name")["visitors"].median().to_dict()
-    df["gw_genre_geo_median"] = df["gw_genre_geo_median"].fillna(
-        df["air_genre_name"].map(gw_genre_global)
-    )
-    df["gw_genre_geo_median"] = df["gw_genre_geo_median"].fillna(
-        gw_2016_train["visitors"].median()
-    )
-
-    reserve_dow = (
-        df_train.groupby(["air_store_id", "day_of_week"])["reserve_visitors"]
-        .agg(median_reserve_visitors_dow="median")
+    last_14 = (
+        df_train.groupby("air_store_id")
+        .tail(14)
+        .groupby("air_store_id")["visitors"]
+        .mean()
         .reset_index()
+        .rename(columns={"visitors": "store_roll_mean_14"})
+    )
+    last_28 = (
+        df_train.groupby("air_store_id")
+        .tail(28)
+        .groupby("air_store_id")["visitors"]
+        .mean()
+        .reset_index()
+        .rename(columns={"visitors": "store_roll_mean_28"})
     )
 
-    df = pd.merge(df, reserve_dow, on=["air_store_id", "day_of_week"], how="left")
-    df["median_reserve_visitors_dow"] = df["median_reserve_visitors_dow"].fillna(0)
+    genre_geo_stats = (
+        df_train.groupby(["air_genre_name", "prefecture"])["visitors"]
+        .mean()
+        .reset_index()
+        .rename(columns={"visitors": "genre_geo_mean_cum"})
+    )
+    genre_stats = (
+        df_train.groupby("air_genre_name")["visitors"]
+        .mean()
+        .reset_index()
+        .rename(columns={"visitors": "genre_mean_cum"})
+    )
 
-    df["walk_in_ratio"] = df["median_visitors_dow"] / (df["median_reserve_visitors_dow"] + 1)
+    df_test = pd.merge(df_test, store_stats, on="air_store_id", how="left")
+    df_test = pd.merge(df_test, store_dow_stats, on=["air_store_id", "day_of_week"], how="left")
+    df_test = pd.merge(df_test, last_14, on="air_store_id", how="left")
+    df_test = pd.merge(df_test, last_28, on="air_store_id", how="left")
+    df_test = pd.merge(df_test, genre_geo_stats, on=["air_genre_name", "prefecture"], how="left")
+    df_test = pd.merge(df_test, genre_stats, on="air_genre_name", how="left")
 
-    return df
+    global_mean = df_train["visitors"].mean()
+
+    for d in [df_train, df_test]:
+        d["genre_geo_mean_cum"] = (
+            d["genre_geo_mean_cum"].fillna(d["genre_mean_cum"]).fillna(global_mean)
+        )
+        d["store_mean_cum"] = d["store_mean_cum"].fillna(d["genre_geo_mean_cum"])
+        d["store_dow_mean_cum"] = d["store_dow_mean_cum"].fillna(d["store_mean_cum"])
+        d["store_roll_mean_14"] = d["store_roll_mean_14"].fillna(d["store_mean_cum"])
+        d["store_roll_mean_28"] = d["store_roll_mean_28"].fillna(d["store_mean_cum"])
+
+        d["reserve_visitors"] = d["reserve_visitors"].fillna(0)
+        d["walk_in_ratio"] = d["store_dow_mean_cum"] / (d["reserve_visitors"] + 1)
+
+        if "visitors_shifted" in d.columns:
+            d.drop(
+                columns=["visitors_shifted", "visitors_dow_shifted", "genre_mean_cum"],
+                inplace=True,
+            )
+        else:
+            d.drop(columns=["genre_mean_cum"], inplace=True)
+
+    return df_train, df_test
 
 
 @app.command()
@@ -105,13 +179,30 @@ def main(
     df_train = pd.read_csv(train_path, parse_dates=["visit_date"])
     df_test = pd.read_csv(test_path, parse_dates=["visit_date"])
 
-    logger.info("Applying Calendar Base Features...")
-    df_train = build_features_advanced(df_train)
-    df_test = build_features_advanced(df_test)
+    logger.info("Applying Base Calendar Features...")
+    df_train = build_base_calendar_features(df_train)
+    df_test = build_base_calendar_features(df_test)
 
-    logger.info("Calculating Leak-Safe Aggregations...")
-    df_train_feat = add_visitor_aggregations(df_train, df_train)
-    df_test_feat = add_visitor_aggregations(df_test, df_train)
+    logger.info(
+        "Calculating Advanced Time-Series Lags & Cumulative Stats (Safe against Leakage)..."
+    )
+    df_train_feat, df_test_feat = build_time_series_features(df_train, df_test)
+
+    categorical_features = [
+        "air_store_id",
+        "air_genre_name",
+        "day_of_week",
+        "month",
+        "day_pattern",
+        "prefecture",
+        "district",
+        "block",
+    ]
+
+    logger.info("Handling categorical NaNs and converting to string...")
+    for col in categorical_features:
+        df_train_feat[col] = df_train_feat[col].fillna("Unknown").astype(str)
+        df_test_feat[col] = df_test_feat[col].fillna("Unknown").astype(str)
 
     logger.info("Saving engineered features...")
     df_train_feat.to_csv(output_train, index=False)
