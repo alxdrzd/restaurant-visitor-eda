@@ -22,11 +22,13 @@ dependencies = [
     "loguru",
     "matplotlib",
     "numpy",
+    "optuna>=4.9.0",
     "pandas",
     "plotly",
     "python-dotenv",
     "scikit-learn",
     "seaborn",
+    "shap>=0.49.1",
     "tqdm",
     "typer",
 ]
