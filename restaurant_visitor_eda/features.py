@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pathlib import Path
 
 from loguru import logger
@@ -13,8 +14,10 @@ app = typer.Typer()
 def build_base_calendar_features(df_old: pd.DataFrame) -> pd.DataFrame:
     df = df_old.copy()
 
-    df["doy_sin"] = np.sin(2 * np.pi * df["visit_date"].dt.dayofyear / 366)
-    df["doy_cos"] = np.cos(2 * np.pi * df["visit_date"].dt.dayofyear / 366)
+    days_in_year = 365 + 1 * df_old["visit_date"].dt.is_leap_year
+
+    df["doy_sin"] = np.sin(2 * np.pi * df["visit_date"].dt.dayofyear / days_in_year)
+    df["doy_cos"] = np.cos(2 * np.pi * df["visit_date"].dt.dayofyear / days_in_year)
 
     df["dow_sin"] = np.sin(2 * np.pi * df["day_of_week_num"] / 7)
     df["dow_cos"] = np.cos(2 * np.pi * df["day_of_week_num"] / 7)
@@ -166,6 +169,59 @@ def build_time_series_features(
             d.drop(columns=["genre_mean_cum"], inplace=True)
 
     return df_train, df_test
+
+
+def get_custom_cv_splits(df: pd.DataFrame, n_splits: int = 3, val_days: int = 39) -> list:
+    splits = []
+    max_date = df["visit_date"].max()
+
+    for i in range(n_splits):
+        val_end = max_date - timedelta(days=i * val_days)
+        val_start = val_end - timedelta(days=val_days - 1)
+
+        train_mask = df["visit_date"] < val_start
+        val_mask = (df["visit_date"] >= val_start) & (df["visit_date"] <= val_end)
+
+        train_idx = df.index[train_mask].tolist()
+        val_idx = df.index[val_mask].tolist()
+
+        splits.append((train_idx, val_idx))
+        print(
+            f"Fold {i + 1}: Train ends {val_start - timedelta(days=1):%Y-%m-%d}"
+            + f"| Val: {val_start:%Y-%m-%d} to {val_end:%Y-%m-%d}"
+        )
+
+    return splits[::-1]
+
+
+categorical_features = [
+    "air_store_id",
+    "air_genre_name",
+    "day_of_week",
+    "month",
+    "day_pattern",
+    "prefecture",
+    "district",
+    "block",
+]
+
+numeric_features = [
+    "latitude",
+    "longitude",
+    "doy_sin",
+    "doy_cos",
+    "dow_sin",
+    "dow_cos",
+    "store_mean_cum",
+    "store_dow_mean_cum",
+    "store_roll_mean_14",
+    "store_roll_mean_28",
+    "genre_geo_mean_cum",
+    "reserve_visitors",
+    "walk_in_ratio",
+]
+
+binary_features = ["is_gw", "is_off_day", "holiday_flg"]
 
 
 @app.command()

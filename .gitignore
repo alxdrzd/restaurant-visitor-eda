@@ -199,3 +199,9 @@ notebooks/submission_*.csv
 
 # CatBoost
 catboost_info/
+
+# MlFlow data base
+*.db
+mlflow_tracking.db
+
+mlruns/

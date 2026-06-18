@@ -21,6 +21,7 @@ dependencies = [
     "catboost>=1.2.10",
     "loguru",
     "matplotlib",
+    "mlflow>=3.14.0",
     "numpy",
     "optuna>=4.9.0",
     "pandas",
