@@ -19,6 +19,7 @@ requires-python = ">=3.10"
 
 dependencies = [
     "catboost>=1.2.10",
+    "integration>=1",
     "loguru",
     "matplotlib",
     "mlflow>=3.14.0",

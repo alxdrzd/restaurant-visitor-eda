@@ -1470,6 +1470,12 @@ wheels = [
 ]
 
 [[package]]
+name = "integration"
+version = "1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/06/2d4d74ac16c9af40fd3c7bb695a7fbe54e047e8d9abf4e6b0b175cd775ff/Integration_1.tar.gz", hash = "sha256:1632215e44fd68baefb4969141265f6bf75871641ff8e0c0adb939b24b8f1771", size = 1728, upload-time = "2016-07-10T13:39:16.37Z" }
+
+[[package]]
 name = "ipykernel"
 version = "7.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3986,6 +3992,7 @@ version = "0.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "catboost" },
+    { name = "integration" },
     { name = "loguru" },
     { name = "matplotlib" },
     { name = "mlflow" },
@@ -4022,6 +4029,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "catboost", specifier = ">=1.2.10" },
+    { name = "integration", specifier = ">=1" },
     { name = "loguru" },
     { name = "matplotlib" },
     { name = "mlflow", specifier = ">=3.14.0" },
