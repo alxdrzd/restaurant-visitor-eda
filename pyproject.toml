@@ -25,6 +25,7 @@ dependencies = [
     "mlflow>=3.14.0",
     "numpy",
     "optuna>=4.9.0",
+    "optuna-integration>=4.9.0",
     "pandas",
     "plotly",
     "python-dotenv",
