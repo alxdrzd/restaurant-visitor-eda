@@ -56,18 +56,24 @@ def build_time_series_features(
         .reset_index(level=[0, 1], drop=True)
     )
 
-    df_train["store_roll_mean_14"] = (
-        df_train.groupby("air_store_id")["visitors_shifted"]
-        .rolling(14, min_periods=1)
+    df_temp = df_train.set_index("visit_date").sort_index()
+
+    roll_14 = (
+        df_temp.groupby("air_store_id")["visitors_shifted"]
+        .rolling("14D", min_periods=1)
         .mean()
-        .reset_index(level=0, drop=True)
-    )
-    df_train["store_roll_mean_28"] = (
-        df_train.groupby("air_store_id")["visitors_shifted"]
-        .rolling(28, min_periods=1)
+        .reset_index()
+    ).rename(columns={"visitors_shifted": "store_roll_mean_14"})
+
+    roll_28 = (
+        df_temp.groupby("air_store_id")["visitors_shifted"]
+        .rolling("28D", min_periods=1)
         .mean()
-        .reset_index(level=0, drop=True)
-    )
+        .reset_index()
+    ).rename(columns={"visitors_shifted": "store_roll_mean_28"})
+
+    df_train = pd.merge(df_train, roll_14, on=["air_store_id", "visit_date"], how="left")
+    df_train = pd.merge(df_train, roll_28, on=["air_store_id", "visit_date"], how="left")
 
     df_date_sorted = df_train.sort_values("visit_date").reset_index(drop=True)
     df_date_sorted["genre_geo_shifted"] = df_date_sorted.groupby(["air_genre_name", "prefecture"])[
@@ -90,11 +96,17 @@ def build_time_series_features(
         .reset_index(level=0, drop=True)
     )
 
+    daily_global = df_train.groupby("visit_date")["visitors"].mean().reset_index()
+    daily_global["global_mean_cum"] = daily_global["visitors"].shift(1).expanding().mean()
+
     df_train = pd.merge(
         df_train,
         df_date_sorted[["air_store_id", "visit_date", "genre_geo_mean_cum", "genre_mean_cum"]],
         on=["air_store_id", "visit_date"],
         how="left",
+    )
+    df_train = pd.merge(
+        df_train, daily_global[["visit_date", "global_mean_cum"]], on="visit_date", how="left"
     )
 
     store_stats = (
@@ -110,17 +122,17 @@ def build_time_series_features(
         .rename(columns={"visitors": "store_dow_mean_cum"})
     )
 
+    max_date = df_train["visit_date"].max()
+
     last_14 = (
-        df_train.groupby("air_store_id")
-        .tail(14)
+        df_train[df_train["visit_date"] > max_date - pd.to_timedelta(14, unit="D")]
         .groupby("air_store_id")["visitors"]
         .mean()
         .reset_index()
         .rename(columns={"visitors": "store_roll_mean_14"})
     )
     last_28 = (
-        df_train.groupby("air_store_id")
-        .tail(28)
+        df_train[df_train["visit_date"] > max_date - pd.to_timedelta(28, unit="D")]
         .groupby("air_store_id")["visitors"]
         .mean()
         .reset_index()
@@ -147,12 +159,19 @@ def build_time_series_features(
     df_test = pd.merge(df_test, genre_geo_stats, on=["air_genre_name", "prefecture"], how="left")
     df_test = pd.merge(df_test, genre_stats, on="air_genre_name", how="left")
 
-    global_mean = df_train["visitors"].mean()
+    final_global_mean = df_train["visitors"].mean()
+
+    df_train["genre_geo_mean_cum"] = (
+        df_train["genre_geo_mean_cum"]
+        .fillna(df_train["genre_mean_cum"])
+        .fillna(df_train["global_mean_cum"])
+    )
+
+    df_test["genre_geo_mean_cum"] = (
+        df_test["genre_geo_mean_cum"].fillna(df_test["genre_mean_cum"]).fillna(final_global_mean)
+    )
 
     for d in [df_train, df_test]:
-        d["genre_geo_mean_cum"] = (
-            d["genre_geo_mean_cum"].fillna(d["genre_mean_cum"]).fillna(global_mean)
-        )
         d["store_mean_cum"] = d["store_mean_cum"].fillna(d["genre_geo_mean_cum"])
         d["store_dow_mean_cum"] = d["store_dow_mean_cum"].fillna(d["store_mean_cum"])
         d["store_roll_mean_14"] = d["store_roll_mean_14"].fillna(d["store_mean_cum"])
@@ -163,11 +182,17 @@ def build_time_series_features(
 
         if "visitors_shifted" in d.columns:
             d.drop(
-                columns=["visitors_shifted", "visitors_dow_shifted", "genre_mean_cum"],
+                columns=[
+                    "visitors_shifted",
+                    "visitors_dow_shifted",
+                    "genre_mean_cum",
+                    "global_mean_cum",
+                ],
                 inplace=True,
+                errors="ignore",
             )
         else:
-            d.drop(columns=["genre_mean_cum"], inplace=True)
+            d.drop(columns=["genre_mean_cum", "global_mean_cum"], inplace=True, errors="ignore")
 
     return df_train, df_test
 
