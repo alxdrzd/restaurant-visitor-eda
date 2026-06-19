@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 
+from catboost import CatBoostRegressor
 from loguru import logger
 import numpy as np
 import pandas as pd
@@ -192,6 +193,64 @@ def get_custom_cv_splits(df: pd.DataFrame, n_splits: int = 3, val_days: int = 39
         )
 
     return splits[::-1]
+
+
+def compute_calendar_lags(df: pd.DataFrame, lags: list[int]) -> pd.DataFrame:
+    res_df = df.copy()
+
+    for lag in lags:
+        shifted = df[["air_store_id", "visit_date", "visitors"]].copy()
+        shifted["visit_date"] = shifted["visit_date"] + pd.to_timedelta(lag, unit="D")
+        shifted = shifted.rename(columns={"visitors": f"lag_{lag}"})
+
+        res_df = pd.merge(res_df, shifted, on=["air_store_id", "visit_date"], how="left")
+
+    return res_df
+
+
+def predict_recursive(
+    model: CatBoostRegressor,
+    df_all: pd.DataFrame,
+    start_date: pd.Timestamp,
+    end_date: pd.Timestamp,
+    features: list[str],
+) -> pd.DataFrame:
+    df_all = df_all.copy()
+    test_dates = pd.date_range(start=start_date, end=end_date)
+
+    for current_date in test_dates:
+        for lag in [1, 7, 14]:
+            prev_date = current_date - pd.to_timedelta(lag, unit="D")
+
+            prev_visitors = df_all.loc[
+                df_all["visit_date"] == prev_date, ["air_store_id", "visitors"]
+            ]
+
+            current_mask = df_all["visit_date"] == current_date
+            if current_mask.any():
+                mapping = prev_visitors.set_index("air_store_id")["visitors"]
+                df_all.loc[current_mask, f"lag_{lag}"] = df_all.loc[
+                    current_mask, "air_store_id"
+                ].map(mapping)
+
+                df_all.loc[current_mask, f"lag_{lag}"] = (
+                    df_all.loc[current_mask, f"lag_{lag}"]
+                    .fillna(df_all.loc[current_mask, "store_dow_mean_cum"])
+                    .fillna(df_all.loc[current_mask, "store_mean_cum"])
+                )
+
+        current_mask = df_all["visit_date"] == current_date
+        if current_mask.any():
+            X_current = df_all.loc[current_mask, features]
+
+            log_preds = model.predict(X_current)
+
+            preds = np.expm1(log_preds)
+
+            preds = np.clip(preds, 0, None)
+            df_all.loc[current_mask, "visitors"] = preds
+
+    return df_all
 
 
 categorical_features = [
