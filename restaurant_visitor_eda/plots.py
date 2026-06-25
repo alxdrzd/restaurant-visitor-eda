@@ -1,5 +1,6 @@
 from typing import Literal, Optional
 
+import catboost
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from scipy import stats
 import seaborn as sns
+from sklearn.inspection import permutation_importance
 import typer
 
 app = typer.Typer()
@@ -739,6 +741,65 @@ def plot_cv_error_vs_alpha(cv_results: dict) -> None:
     )
 
     fig.show()
+
+
+def plot_permutation_importance(
+    model: catboost.CatBoostRegressor,
+    X_val: pd.DataFrame,
+    y_val: pd.Series | np.ndarray,
+    features: list[str],
+    n_repeats: int = 5,
+    random_state: int = 42,
+    scoring: str = "neg_root_mean_squared_error",
+) -> pd.DataFrame:
+    X_val_subset = X_val[features]
+
+    print(f"Calculating Permutation Importance (repeats: {n_repeats}, score: {scoring})...")
+
+    result = permutation_importance(
+        model,
+        X_val_subset,
+        y_val,
+        scoring=scoring,
+        n_repeats=n_repeats,
+        random_state=random_state,
+        n_jobs=-1,
+    )
+
+    pfi_df = pd.DataFrame(
+        {
+            "feature": features,
+            "importance_mean": result.importances_mean,
+            "importance_std": result.importances_std,
+        }
+    )
+
+    pfi_df = pfi_df.sort_values(by="importance_mean", ascending=False).reset_index(drop=True)
+
+    pfi_df_plot = pfi_df.sort_values(by="importance_mean", ascending=True).reset_index(drop=True)
+
+    plt.figure(figsize=(11, 8))
+
+    colors = sns.color_palette("viridis", len(pfi_df_plot))
+
+    plt.barh(
+        pfi_df_plot["feature"],
+        pfi_df_plot["importance_mean"],
+        xerr=pfi_df_plot["importance_std"],
+        color=colors,
+        edgecolor="none",
+        height=0.6,
+        error_kw={"ecolor": "gray", "lw": 1, "capsize": 3},
+    )
+
+    plt.title("Permutation Feature Importance (Validation Set)")
+    plt.xlabel(f"Decrease in {scoring}")
+    plt.ylabel("Features")
+    plt.grid(axis="x", linestyle="--", alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+    return pfi_df
 
 
 @app.command()

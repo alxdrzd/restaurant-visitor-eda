@@ -12,6 +12,64 @@ from restaurant_visitor_eda.config import PROCESSED_DATA_DIR
 app = typer.Typer()
 
 
+def build_calendar_rolling_features(
+    df_train_param: pd.DataFrame, df_test_param: pd.DataFrame, windows: list[int]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    df_train = df_train_param.copy()
+    df_test = df_test_param.copy()
+
+    min_date, max_date = df_train["visit_date"].min(), df_train["visit_date"].max()
+
+    stores = df_train["air_store_id"].unique()
+    all_dates = pd.date_range(start=min_date, end=max_date, freq="D")
+
+    full_grid = (
+        pd.MultiIndex.from_product([stores, all_dates], names=["air_store_id", "visit_date"])
+        .to_frame()
+        .reset_index(drop=True)
+    )
+
+    df_full = pd.merge(
+        full_grid,
+        df_train[["air_store_id", "visit_date", "visitors"]],
+        on=["air_store_id", "visit_date"],
+        how="left",
+    )
+
+    df_full = df_full.sort_values(["air_store_id", "visit_date"]).reset_index(drop=True)
+
+    df_full["visitors_shifted_1D"] = df_full.groupby("air_store_id")["visitors"].shift(1)
+
+    df_full = df_full.set_index("visit_date")
+
+    for w in windows:
+        col_name = f"store_roll_mean_{w}"
+        df_full[col_name] = (
+            df_full.groupby("air_store_id")["visitors_shifted_1D"]
+            .rolling(f"{w}D", min_periods=1)
+            .mean()
+            .reset_index(level=0, drop=True)
+        )
+
+    df_full = df_full.reset_index()
+
+    last_values = (
+        df_full[df_full["visit_date"] == max_date]
+        .groupby("air_store_id")[[f"store_roll_mean_{w}" for w in windows]]
+        .first()
+        .reset_index()
+    )
+
+    rolling_cols = ["air_store_id", "visit_date"] + [f"store_roll_mean_{w}" for w in windows]
+    df_train = pd.merge(
+        df_train, df_full[rolling_cols], on=["air_store_id", "visit_date"], how="left"
+    )
+
+    df_test = pd.merge(df_test, last_values, on="air_store_id", how="left")
+
+    return df_train, df_test
+
+
 def build_base_calendar_features(df_old: pd.DataFrame) -> pd.DataFrame:
     df = df_old.copy()
 
@@ -36,6 +94,8 @@ def build_time_series_features(
     df_train = df_train.copy()
     df_test = df_test.copy()
 
+    df_train, df_test = build_calendar_rolling_features(df_train, df_test, windows=[14, 28])
+
     df_train = df_train.sort_values(["air_store_id", "visit_date"]).reset_index(drop=True)
 
     df_train["visitors_shifted"] = df_train.groupby("air_store_id")["visitors"].shift(1)
@@ -56,41 +116,31 @@ def build_time_series_features(
         .reset_index(level=[0, 1], drop=True)
     )
 
-    df_temp = df_train.set_index("visit_date").sort_index()
-
-    roll_14 = (
-        df_temp.groupby("air_store_id")["visitors_shifted"]
-        .rolling("14D", min_periods=1)
+    daily_genre_geo = (
+        df_train.groupby(["air_genre_name", "prefecture", "visit_date"])["visitors"]
         .mean()
         .reset_index()
-    ).rename(columns={"visitors_shifted": "store_roll_mean_14"})
-
-    roll_28 = (
-        df_temp.groupby("air_store_id")["visitors_shifted"]
-        .rolling("28D", min_periods=1)
-        .mean()
-        .reset_index()
-    ).rename(columns={"visitors_shifted": "store_roll_mean_28"})
-
-    df_train = pd.merge(df_train, roll_14, on=["air_store_id", "visit_date"], how="left")
-    df_train = pd.merge(df_train, roll_28, on=["air_store_id", "visit_date"], how="left")
-
-    df_date_sorted = df_train.sort_values("visit_date").reset_index(drop=True)
-    df_date_sorted["genre_geo_shifted"] = df_date_sorted.groupby(["air_genre_name", "prefecture"])[
-        "visitors"
-    ].shift(1)
-    df_date_sorted["genre_shifted"] = df_date_sorted.groupby(["air_genre_name"])["visitors"].shift(
-        1
     )
-
-    df_date_sorted["genre_geo_mean_cum"] = (
-        df_date_sorted.groupby(["air_genre_name", "prefecture"])["genre_geo_shifted"]
+    daily_genre_geo = daily_genre_geo.sort_values(
+        ["air_genre_name", "prefecture", "visit_date"]
+    ).reset_index(drop=True)
+    daily_genre_geo["genre_geo_shifted"] = daily_genre_geo.groupby(
+        ["air_genre_name", "prefecture"]
+    )["visitors"].shift(1)
+    daily_genre_geo["genre_geo_mean_cum"] = (
+        daily_genre_geo.groupby(["air_genre_name", "prefecture"])["genre_geo_shifted"]
         .expanding()
         .mean()
         .reset_index(level=[0, 1], drop=True)
     )
-    df_date_sorted["genre_mean_cum"] = (
-        df_date_sorted.groupby(["air_genre_name"])["genre_shifted"]
+
+    daily_genre = (
+        df_train.groupby(["air_genre_name", "visit_date"])["visitors"].mean().reset_index()
+    )
+    daily_genre = daily_genre.sort_values(["air_genre_name", "visit_date"]).reset_index(drop=True)
+    daily_genre["genre_shifted"] = daily_genre.groupby(["air_genre_name"])["visitors"].shift(1)
+    daily_genre["genre_mean_cum"] = (
+        daily_genre.groupby(["air_genre_name"])["genre_shifted"]
         .expanding()
         .mean()
         .reset_index(level=0, drop=True)
@@ -101,8 +151,14 @@ def build_time_series_features(
 
     df_train = pd.merge(
         df_train,
-        df_date_sorted[["air_store_id", "visit_date", "genre_geo_mean_cum", "genre_mean_cum"]],
-        on=["air_store_id", "visit_date"],
+        daily_genre_geo[["air_genre_name", "prefecture", "visit_date", "genre_geo_mean_cum"]],
+        on=["air_genre_name", "prefecture", "visit_date"],
+        how="left",
+    )
+    df_train = pd.merge(
+        df_train,
+        daily_genre[["air_genre_name", "visit_date", "genre_mean_cum"]],
+        on=["air_genre_name", "visit_date"],
         how="left",
     )
     df_train = pd.merge(
@@ -122,23 +178,6 @@ def build_time_series_features(
         .rename(columns={"visitors": "store_dow_mean_cum"})
     )
 
-    max_date = df_train["visit_date"].max()
-
-    last_14 = (
-        df_train[df_train["visit_date"] > max_date - pd.to_timedelta(14, unit="D")]
-        .groupby("air_store_id")["visitors"]
-        .mean()
-        .reset_index()
-        .rename(columns={"visitors": "store_roll_mean_14"})
-    )
-    last_28 = (
-        df_train[df_train["visit_date"] > max_date - pd.to_timedelta(28, unit="D")]
-        .groupby("air_store_id")["visitors"]
-        .mean()
-        .reset_index()
-        .rename(columns={"visitors": "store_roll_mean_28"})
-    )
-
     genre_geo_stats = (
         df_train.groupby(["air_genre_name", "prefecture"])["visitors"]
         .mean()
@@ -154,8 +193,6 @@ def build_time_series_features(
 
     df_test = pd.merge(df_test, store_stats, on="air_store_id", how="left")
     df_test = pd.merge(df_test, store_dow_stats, on=["air_store_id", "day_of_week"], how="left")
-    df_test = pd.merge(df_test, last_14, on="air_store_id", how="left")
-    df_test = pd.merge(df_test, last_28, on="air_store_id", how="left")
     df_test = pd.merge(df_test, genre_geo_stats, on=["air_genre_name", "prefecture"], how="left")
     df_test = pd.merge(df_test, genre_stats, on="air_genre_name", how="left")
 
@@ -299,7 +336,7 @@ numeric_features = [
     "store_mean_cum",
     "store_dow_mean_cum",
     "store_roll_mean_14",
-    "store_roll_mean_28",
+    # "store_roll_mean_28",
     "genre_geo_mean_cum",
     "reserve_visitors",
     "walk_in_ratio",
@@ -327,17 +364,6 @@ def main(
         "Calculating Advanced Time-Series Lags & Cumulative Stats (Safe against Leakage)..."
     )
     df_train_feat, df_test_feat = build_time_series_features(df_train, df_test)
-
-    categorical_features = [
-        "air_store_id",
-        "air_genre_name",
-        "day_of_week",
-        "month",
-        "day_pattern",
-        "prefecture",
-        "district",
-        "block",
-    ]
 
     logger.info("Handling categorical NaNs and converting to string...")
     for col in categorical_features:

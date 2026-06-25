@@ -205,3 +205,12 @@ catboost_info/
 mlflow_tracking.db
 
 mlruns/
+
+*.cb
+*.pkl
+*.joblib
+models/*.cb
+
+# Submissions (ignore all predictions)
+submission_*.csv
+/submissions/

@@ -59,6 +59,21 @@ data: requirements
 # Self Documenting Commands                                                     #
 #################################################################################
 
+## Train the final model using best parameters
+.PHONY: train
+train:
+	uv run python -m restaurant_visitor_eda.modeling.train
+
+## Generate submission using the trained model
+.PHONY: predict
+predict:
+	uv run python -m restaurant_visitor_eda.modeling.predict
+
+## Run the full end-to-end pipeline
+.PHONY: pipeline
+pipeline: data train predict
+	@echo ">>> End-to-end pipeline completed successfully! Submission file is ready."
+
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
