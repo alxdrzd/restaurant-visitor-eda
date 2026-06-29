@@ -339,7 +339,7 @@ numeric_features = [
     # "store_roll_mean_28",
     "genre_geo_mean_cum",
     "reserve_visitors",
-    "walk_in_ratio",
+    # "walk_in_ratio",
 ]
 
 binary_features = ["is_gw", "is_off_day", "holiday_flg"]
